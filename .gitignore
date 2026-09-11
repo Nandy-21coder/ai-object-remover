@@ -1,0 +1,43 @@
+# Byte-compiled / Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Virtual Environments
+env/
+venv/
+ENV/
+.venv/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+
+# Large AI Model Weights (Offline LaMa ONNX model)
+*.onnx
+
+# Unit Tests & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Debugging
+*.log
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+pyrightconfig.json
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+Desktop.ini

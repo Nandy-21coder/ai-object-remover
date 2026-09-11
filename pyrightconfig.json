@@ -1,0 +1,10 @@
+{
+  "include": [
+    "ai-object-remover"
+  ],
+  "extraPaths": [
+    "ai-object-remover/backend"
+  ],
+  "pythonPath": "C:/Users/user/AppData/Local/Python/pythoncore-3.14-64/python.exe",
+  "pythonPlatform": "Windows"
+}

@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/ai-object-remover/backend"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/ai-object-remover/backend"
+  ]
+}
