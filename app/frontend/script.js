@@ -1,8 +1,7 @@
 /**
- * AI Canvas Studio — Frontend Engine
- * Professional desktop-style AI photo editor workspace
- * Micro-interactions, GPU transitions, coordinate-locked brush cursor,
- * and real LaMa inpainting integration.
+ * AI Photo Studio — Frontend Engine
+ * Minimal, upload-first AI photo editor with coordinate-locked brush cursor,
+ * smooth in-place transitions, zero viewport-jump inpainting, and real LaMa integration.
  */
 
 (function () {
@@ -18,26 +17,34 @@
   // Discrete zoom steps
   const ZOOM_STEPS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0];
 
+  // AI Inference UI Status Stages
+  const PROCESSING_STAGES = [
+    'Analyzing image',
+    'Preparing mask',
+    'Reconstructing background',
+    'Finishing result'
+  ];
+
   // Core Application State
   const state = {
-    // Images
-    initialImage: null,      // Pristine original image
-    currentImage: null,      // Active image currently being edited
-    resultImage: null,       // AI inpainting result
-    resultBlob: null,        // Latest result blob for high-res download
-    currentFile: null,       // File object reference
+    // Image references
+    initialImage: null,
+    currentImage: null,
+    resultImage: null,
+    resultBlob: null,
+    currentFileName: 'image.png',
     imageWidth: 0,
     imageHeight: 0,
 
     // Tools & Drawing
-    currentTool: 'brush',    // 'brush' | 'eraser' | 'select'
-    brushSize: 30,           // 5 to 150 px
+    currentTool: 'brush', // 'brush' | 'eraser' | 'select'
+    brushSize: 30,        // 5 to 150 px
     isDrawing: false,
     lastX: 0,
     lastY: 0,
     hasMaskSelection: false,
 
-    // Viewport & Zoom
+    // Viewport & Pan/Zoom
     zoom: 1.0,
     fitZoom: 1.0,
     panX: 0,
@@ -47,50 +54,46 @@
     panStartY: 0,
     spacePressed: false,
 
-    // History
+    // Undo / Redo
     undoStack: [],
     redoStack: [],
     maxHistory: 20,
 
     // Processing & Result State
     isProcessing: false,
-    processingPhaseTimer: null,
+    processingStageTimer: null,
     hasResult: false,
-    splitSliderPos: 50,      // Percent (0 - 100)
+    splitSliderPos: 50,
     isDraggingSplit: false,
   };
 
   // DOM Elements
   const els = {
-    // Topbar
-    studioTopbar: document.getElementById('studioTopbar'),
-    brandLogo: document.getElementById('brandLogo'),
-    projectTitle: document.getElementById('projectTitle'),
-    projectsBtn: document.getElementById('projectsBtn'),
-    saveBtn: document.getElementById('saveBtn'),
-    exportBtn: document.getElementById('exportBtn'),
-    exportBtnLabel: document.getElementById('exportBtnLabel'),
+    // Navigation & Hero
+    heroStartBtn: document.getElementById('heroStartBtn'),
+    navLoginBtn: document.getElementById('navLoginBtn'),
+    navContactBtn: document.getElementById('navContactBtn'),
 
-    // Left Toolbar
-    toolSelectBtn: document.getElementById('toolSelectBtn'),
-    toolBrushBtn: document.getElementById('toolBrushBtn'),
-    toolEraserBtn: document.getElementById('toolEraserBtn'),
-    toolRemoveQuickBtn: document.getElementById('toolRemoveQuickBtn'),
-    toolUndoBtn: document.getElementById('toolUndoBtn'),
-    toolRedoBtn: document.getElementById('toolRedoBtn'),
-    toolClearMaskBtn: document.getElementById('toolClearMaskBtn'),
-    toolNewPhotoBtn: document.getElementById('toolNewPhotoBtn'),
-
-    // Center Stage
-    centerStage: document.getElementById('centerStage'),
-    emptyState: document.getElementById('emptyState'),
-    emptyDropZone: document.getElementById('emptyDropZone'),
-    uploadPhotoBtn: document.getElementById('uploadPhotoBtn'),
-    pasteClipboardBtn: document.getElementById('pasteClipboardBtn'),
+    // Upload Section
+    uploadSection: document.getElementById('uploadSection'),
+    dropZone: document.getElementById('dropZone'),
+    browseFilesBtn: document.getElementById('browseFilesBtn'),
     fileInput: document.getElementById('fileInput'),
 
+    // Editor Section & Header
+    editorSection: document.getElementById('editorSection'),
+    imageFilename: document.getElementById('imageFilename'),
+    imageDimensions: document.getElementById('imageDimensions'),
+    toolNewPhotoBtn: document.getElementById('toolNewPhotoBtn'),
+
+    // Zoom Controls
+    zoomOutBtn: document.getElementById('zoomOutBtn'),
+    zoomLevelDisplay: document.getElementById('zoomLevelDisplay'),
+    zoomInBtn: document.getElementById('zoomInBtn'),
+    zoomFitBtn: document.getElementById('zoomFitBtn'),
+    zoomOriginalBtn: document.getElementById('zoomOriginalBtn'),
+
     // Canvas Stage
-    canvasStage: document.getElementById('canvasStage'),
     canvasViewport: document.getElementById('canvasViewport'),
     canvasContainer: document.getElementById('canvasContainer'),
     imageCanvas: document.getElementById('imageCanvas'),
@@ -98,29 +101,23 @@
     maskCanvas: document.getElementById('maskCanvas'),
     splitSlider: document.getElementById('splitSlider'),
     brushCursor: document.getElementById('brushCursor'),
+
+    // Processing Card
     processingStatusCard: document.getElementById('processingStatusCard'),
-    phase1: document.getElementById('phase1'),
-    phase2: document.getElementById('phase2'),
-    phase3: document.getElementById('phase3'),
+    processingStageDisplay: document.getElementById('processingStageDisplay'),
 
-    // Bottom Canvas Bar
-    bottomCanvasBar: document.getElementById('bottomCanvasBar'),
-    zoomOutBtn: document.getElementById('zoomOutBtn'),
-    zoomLevelDisplay: document.getElementById('zoomLevelDisplay'),
-    zoomInBtn: document.getElementById('zoomInBtn'),
-    zoomFitBtn: document.getElementById('zoomFitBtn'),
-    zoomOriginalBtn: document.getElementById('zoomOriginalBtn'),
-    imageDimensionsBadge: document.getElementById('imageDimensionsBadge'),
-
-    // Right Contextual Panel
-    rightPanel: document.getElementById('rightPanel'),
-    panelToolBrush: document.getElementById('panelToolBrush'),
-    panelToolEraser: document.getElementById('panelToolEraser'),
+    // Right Tools Panel
+    toolsPanel: document.getElementById('toolsPanel'),
+    toolBrushBtn: document.getElementById('toolBrushBtn'),
+    toolEraserBtn: document.getElementById('toolEraserBtn'),
     brushSizeRange: document.getElementById('brushSizeRange'),
     brushSizeDisplay: document.getElementById('brushSizeDisplay'),
     brushPresetPills: document.getElementById('brushPresetPills'),
-    eraseMaskBtn: document.getElementById('eraseMaskBtn'),
-    clearSelectionBtn: document.getElementById('clearSelectionBtn'),
+
+    // Actions & Buttons
+    toolUndoBtn: document.getElementById('toolUndoBtn'),
+    toolRedoBtn: document.getElementById('toolRedoBtn'),
+    toolClearMaskBtn: document.getElementById('toolClearMaskBtn'),
     removeObjectBtn: document.getElementById('removeObjectBtn'),
     removeBtnSpinner: document.getElementById('removeBtnSpinner'),
     removeBtnIcon: document.getElementById('removeBtnIcon'),
@@ -129,7 +126,6 @@
 
     // Result Controls
     resultControls: document.getElementById('resultControls'),
-    resultBadge: document.getElementById('resultBadge'),
     resultMetrics: document.getElementById('resultMetrics'),
     e2eTimeVal: document.getElementById('e2eTimeVal'),
     e2eDetailedVal: document.getElementById('e2eDetailedVal'),
@@ -139,21 +135,27 @@
     editAgainBtn: document.getElementById('editAgainBtn'),
     tryAnotherBtn: document.getElementById('tryAnotherBtn'),
 
+    // Showcase Interactive Slider
+    showcaseProductSlider: document.getElementById('showcaseProductSlider'),
+    showcaseProductClip: document.getElementById('showcaseProductClip'),
+    showcaseProductHandle: document.getElementById('showcaseProductHandle'),
+
     // Toast Container
     toastContainer: document.getElementById('toastContainer'),
   };
 
-  // Canvas Contexts
+  // Canvas 2D Rendering Contexts
   let imageCtx = null;
   let resultCtx = null;
   let maskCtx = null;
 
   /* ==========================================================================
-     INITIALIZATION
+     1. INITIALIZATION
      ========================================================================== */
   function init() {
     initCanvasContexts();
     attachEventListeners();
+    initShowcaseSlider();
     updateUIState();
   }
 
@@ -168,77 +170,121 @@
   }
 
   /* ==========================================================================
-     EVENT LISTENERS ATTACHMENT
+     2. EVENT LISTENERS
      ========================================================================== */
   function attachEventListeners() {
-    // File Upload & Drag/Drop
-    els.uploadPhotoBtn.addEventListener('click', () => els.fileInput.click());
-    els.fileInput.addEventListener('change', handleFileInputChange);
-    els.pasteClipboardBtn.addEventListener('click', handlePasteFromClipboard);
+    // "Start Creating" CTA directly opens file upload workflow (NO fake/sample generation)
+    if (els.heroStartBtn) {
+      els.heroStartBtn.addEventListener('click', () => els.fileInput.click());
+    }
 
-    // Global Drag and Drop
+    // Top Nav buttons
+    if (els.navLoginBtn) {
+      els.navLoginBtn.addEventListener('click', () => {
+        showToast('Account login is available in Cloud edition. Local mode is unlocked.', 'info');
+      });
+    }
+
+    // File Upload (Drag & Drop, Click, File Input)
+    if (els.dropZone) {
+      els.dropZone.addEventListener('click', (e) => {
+        if (e.target !== els.browseFilesBtn) {
+          els.fileInput.click();
+        }
+      });
+      els.dropZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          els.fileInput.click();
+        }
+      });
+    }
+    if (els.browseFilesBtn) {
+      els.browseFilesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        els.fileInput.click();
+      });
+    }
+    if (els.fileInput) {
+      els.fileInput.addEventListener('change', handleFileInputChange);
+    }
+
+    // Window Drag & Drop
     window.addEventListener('dragover', handleWindowDragOver);
     window.addEventListener('dragleave', handleWindowDragLeave);
     window.addEventListener('drop', handleWindowDrop);
 
-    // Global Paste (Ctrl+V)
+    // Global Clipboard Paste (Ctrl+V)
     window.addEventListener('paste', handleWindowPaste);
 
-    // Tools Switching
-    els.toolSelectBtn.addEventListener('click', () => setTool('select'));
-    els.toolBrushBtn.addEventListener('click', () => setTool('brush'));
-    els.toolEraserBtn.addEventListener('click', () => setTool('eraser'));
-    els.panelToolBrush.addEventListener('click', () => setTool('brush'));
-    els.panelToolEraser.addEventListener('click', () => setTool('eraser'));
-
-    // Brush Size
-    els.brushSizeRange.addEventListener('input', (e) => setBrushSize(parseInt(e.target.value, 10)));
-    els.brushPresetPills.addEventListener('click', (e) => {
-      const pill = e.target.closest('.preset-pill');
-      if (pill && pill.dataset.size) {
-        setBrushSize(parseInt(pill.dataset.size, 10));
-      }
-    });
-
-    // Undo / Redo
-    els.toolUndoBtn.addEventListener('click', undo);
-    els.toolRedoBtn.addEventListener('click', redo);
-
-    // Clear Mask
-    els.toolClearMaskBtn.addEventListener('click', clearMaskSelection);
-    els.clearSelectionBtn.addEventListener('click', clearMaskSelection);
-    els.eraseMaskBtn.addEventListener('click', () => setTool('eraser'));
-
     // New Photo / Try Another
-    els.toolNewPhotoBtn.addEventListener('click', () => els.fileInput.click());
-    els.tryAnotherBtn.addEventListener('click', () => els.fileInput.click());
+    if (els.toolNewPhotoBtn) {
+      els.toolNewPhotoBtn.addEventListener('click', () => els.fileInput.click());
+    }
+    if (els.tryAnotherBtn) {
+      els.tryAnotherBtn.addEventListener('click', () => els.fileInput.click());
+    }
 
-    // AI Inpainting
-    els.removeObjectBtn.addEventListener('click', executeObjectRemoval);
-    els.toolRemoveQuickBtn.addEventListener('click', executeObjectRemoval);
+    // Tool switching (Brush vs Eraser)
+    if (els.toolBrushBtn) {
+      els.toolBrushBtn.addEventListener('click', () => setTool('brush'));
+    }
+    if (els.toolEraserBtn) {
+      els.toolEraserBtn.addEventListener('click', () => setTool('eraser'));
+    }
+
+    // Brush Size Slider & Presets
+    if (els.brushSizeRange) {
+      els.brushSizeRange.addEventListener('input', (e) => {
+        setBrushSize(parseInt(e.target.value, 10));
+      });
+    }
+    if (els.brushPresetPills) {
+      els.brushPresetPills.addEventListener('click', (e) => {
+        const btn = e.target.closest('.preset-btn');
+        if (btn && btn.dataset.size) {
+          setBrushSize(parseInt(btn.dataset.size, 10));
+        }
+      });
+    }
+
+    // Undo / Redo / Clear
+    if (els.toolUndoBtn) els.toolUndoBtn.addEventListener('click', undo);
+    if (els.toolRedoBtn) els.toolRedoBtn.addEventListener('click', redo);
+    if (els.toolClearMaskBtn) els.toolClearMaskBtn.addEventListener('click', clearMaskSelection);
+
+    // Primary AI Removal Action
+    if (els.removeObjectBtn) {
+      els.removeObjectBtn.addEventListener('click', executeObjectRemoval);
+    }
 
     // Result Actions
-    els.downloadResultBtn.addEventListener('click', handleDownloadFeedback);
-    els.exportBtn.addEventListener('click', handleDownloadFeedback);
-    els.editAgainBtn.addEventListener('click', applyResultAndEditAgain);
-    els.saveBtn.addEventListener('click', () => showToast('Project state saved locally.', 'info'));
-    els.projectsBtn.addEventListener('click', () => showToast('Projects library is in preview.', 'info'));
+    if (els.downloadResultBtn) {
+      els.downloadResultBtn.addEventListener('click', handleDownloadResult);
+    }
+    if (els.editAgainBtn) {
+      els.editAgainBtn.addEventListener('click', applyResultAndEditAgain);
+    }
 
     // Zoom Controls
-    els.zoomInBtn.addEventListener('click', zoomIn);
-    els.zoomOutBtn.addEventListener('click', zoomOut);
-    els.zoomFitBtn.addEventListener('click', zoomFit);
-    els.zoomOriginalBtn.addEventListener('click', zoomOriginal);
+    if (els.zoomInBtn) els.zoomInBtn.addEventListener('click', zoomIn);
+    if (els.zoomOutBtn) els.zoomOutBtn.addEventListener('click', zoomOut);
+    if (els.zoomFitBtn) els.zoomFitBtn.addEventListener('click', zoomFit);
+    if (els.zoomOriginalBtn) els.zoomOriginalBtn.addEventListener('click', zoomOriginal);
 
-    // Canvas Viewport Mouse / Pointer Events for Drawing & Panning
-    els.canvasViewport.addEventListener('wheel', handleCanvasWheel, { passive: false });
-    els.canvasViewport.addEventListener('pointerdown', handleCanvasPointerDown);
+    // Canvas Pointer Events (Drawing & Panning)
+    if (els.canvasViewport) {
+      els.canvasViewport.addEventListener('wheel', handleCanvasWheel, { passive: false });
+      els.canvasViewport.addEventListener('pointerdown', handleCanvasPointerDown);
+      els.canvasViewport.addEventListener('pointerenter', handleViewportPointerEnter);
+      els.canvasViewport.addEventListener('pointerleave', handleViewportPointerLeave);
+    }
     window.addEventListener('pointermove', handleWindowPointerMove);
     window.addEventListener('pointerup', handleWindowPointerUp);
 
-    // Comparison Split Slider Drag Events
+    // Split Slider Dragging inside editor
     if (els.splitSlider) {
-      const handle = els.splitSlider.querySelector('.split-slider-handle');
+      const handle = els.splitSlider.querySelector('.slider-divider-handle');
       if (handle) {
         handle.addEventListener('pointerdown', (e) => {
           e.stopPropagation();
@@ -252,100 +298,65 @@
       }
     }
 
-    // Keyboard Shortcuts
+    // Keyboard Shortcuts & Window Resize
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('resize', handleWindowResize);
   }
 
   /* ==========================================================================
-     IMAGE LOADING & CANVAS SETUP (CANVAS ENTRANCE)
+     3. FILE UPLOAD & TRANSITION
      ========================================================================== */
   function handleFileInputChange(e) {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      loadImageFromFile(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processSelectedFile(files[0]);
     }
     e.target.value = '';
   }
 
   function handleWindowDragOver(e) {
     e.preventDefault();
-    e.stopPropagation();
-    if (els.emptyDropZone) {
-      els.emptyDropZone.classList.add('drag-over');
-    }
+    if (els.dropZone) els.dropZone.classList.add('drag-over');
   }
 
   function handleWindowDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (els.emptyDropZone) {
-      els.emptyDropZone.classList.remove('drag-over');
+    if (e.relatedTarget === null && els.dropZone) {
+      els.dropZone.classList.remove('drag-over');
     }
   }
 
   function handleWindowDrop(e) {
     e.preventDefault();
-    e.stopPropagation();
-    if (els.emptyDropZone) {
-      els.emptyDropZone.classList.remove('drag-over');
-    }
-    const dt = e.dataTransfer;
-    if (dt && dt.files && dt.files.length > 0) {
-      const file = dt.files[0];
-      if (file.type.startsWith('image/')) {
-        loadImageFromFile(file);
-      } else {
-        showToast('Please upload a valid image file (JPG, PNG, WebP).', 'error');
-      }
-    }
-  }
-
-  async function handlePasteFromClipboard() {
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.read) {
-        showToast('Press Ctrl+V to paste an image directly from your clipboard.', 'info');
-        return;
-      }
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        for (const type of item.types) {
-          if (type.startsWith('image/')) {
-            const blob = await item.getType(type);
-            const file = new File([blob], 'clipboard-image.png', { type });
-            loadImageFromFile(file);
-            showToast('Image pasted from clipboard.', 'success');
-            return;
-          }
-        }
-      }
-      showToast('No image data found in clipboard.', 'info');
-    } catch (err) {
-      showToast('Clipboard access was blocked. Press Ctrl+V directly to paste.', 'info');
+    if (els.dropZone) els.dropZone.classList.remove('drag-over');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processSelectedFile(e.dataTransfer.files[0]);
     }
   }
 
   function handleWindowPaste(e) {
     if (isTypingInInput()) return;
-    const items = (e.clipboardData || window.clipboardData)?.items;
+    const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
     if (!items) return;
+
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (file) {
-          loadImageFromFile(file);
-          showToast('Image loaded from clipboard.', 'success');
+          processSelectedFile(file);
+          showToast('Image pasted from clipboard.', 'info');
           break;
         }
       }
     }
   }
 
-  function loadImageFromFile(file) {
-    const validFormats = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validFormats.includes(file.type)) {
-      showToast('Unsupported format. Please select a JPG, PNG, or WebP photo.', 'error');
+  function processSelectedFile(file) {
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
+      showToast('Unsupported format. Please upload JPG, PNG, or WebP.', 'error');
       return;
     }
 
@@ -358,7 +369,7 @@
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        setupEditorWithImage(img, file.name || 'Untitled Document');
+        setupEditorWithImage(img, file.name || 'photo.png');
       };
       img.src = event.target.result;
     };
@@ -370,43 +381,35 @@
     state.currentImage = img;
     state.resultImage = null;
     state.resultBlob = null;
+    state.currentFileName = filename;
     state.imageWidth = img.naturalWidth || img.width;
     state.imageHeight = img.naturalHeight || img.height;
     state.hasResult = false;
 
-    // Reset stacks
+    // Reset stacks & selection
     state.undoStack = [];
     state.redoStack = [];
     state.hasMaskSelection = false;
 
-    // Update Topbar Title & Dimensions badge
-    if (els.projectTitle) els.projectTitle.textContent = filename;
-    if (els.imageDimensionsBadge) {
-      els.imageDimensionsBadge.textContent = `${state.imageWidth} × ${state.imageHeight} px`;
+    // Update Header info
+    if (els.imageFilename) els.imageFilename.textContent = filename;
+    if (els.imageDimensions) {
+      els.imageDimensions.textContent = `${state.imageWidth} × ${state.imageHeight} px`;
     }
 
     // Configure Canvas Dimensions
     setupCanvasLayers();
 
-    // Switch view from Empty State to Active Canvas Stage & Contextual Panel
-    els.emptyState.style.display = 'none';
-    els.canvasStage.style.display = 'flex';
-    els.rightPanel.style.display = 'flex';
-
-    // 1. Subtle, fast canvas entrance animation (220ms)
-    els.canvasContainer.classList.remove('canvas-entrance');
-    void els.canvasContainer.offsetWidth; // Force reflow
-    els.canvasContainer.classList.add('canvas-entrance');
-    setTimeout(() => {
-      els.canvasContainer.classList.remove('canvas-entrance');
-    }, 250);
+    // In-Place Smooth Transition: Hide Upload Section, Reveal Editor Section
+    els.uploadSection.style.display = 'none';
+    els.editorSection.style.display = 'block';
 
     // Hide any previous result controls & split slider
     if (els.resultControls) els.resultControls.style.display = 'none';
     if (els.splitSlider) els.splitSlider.style.display = 'none';
     if (els.resultCanvas) els.resultCanvas.classList.remove('active');
 
-    // Default tool to brush
+    // Default tool
     setTool('brush');
 
     // Calculate Best Fit Zoom & Center Viewport
@@ -436,42 +439,33 @@
       els.maskCanvas.style.opacity = '1';
     }
 
-    els.canvasContainer.style.width = `${w}px`;
-    els.canvasContainer.style.height = `${h}px`;
+    if (els.canvasContainer) {
+      els.canvasContainer.style.width = `${w}px`;
+      els.canvasContainer.style.height = `${h}px`;
+    }
   }
 
   /* ==========================================================================
-     TOOL & BRUSH SIZE SWITCHING (WITH BRUSH/ERASER CURSOR VISUAL DISTINCTION)
+     4. TOOLS & BRUSH MANAGEMENT
      ========================================================================== */
   function setTool(toolName) {
     state.currentTool = toolName;
 
-    // Update Left Toolbar Buttons
-    [els.toolSelectBtn, els.toolBrushBtn, els.toolEraserBtn].forEach((btn) => {
-      if (btn) btn.classList.toggle('active', btn.dataset.tool === toolName);
-    });
+    if (els.toolBrushBtn) {
+      els.toolBrushBtn.classList.toggle('active', toolName === 'brush');
+      els.toolBrushBtn.setAttribute('aria-selected', toolName === 'brush');
+    }
+    if (els.toolEraserBtn) {
+      els.toolEraserBtn.classList.toggle('active', toolName === 'eraser');
+      els.toolEraserBtn.setAttribute('aria-selected', toolName === 'eraser');
+    }
 
-    // Update Right Contextual Panel Segmented Control
-    if (els.panelToolBrush) els.panelToolBrush.classList.toggle('active', toolName === 'brush');
-    if (els.panelToolEraser) els.panelToolEraser.classList.toggle('active', toolName === 'eraser');
-
-    // Update Brush Cursor Distinction
     if (els.brushCursor) {
       if (toolName === 'eraser') {
-        els.brushCursor.classList.remove('brush-mode');
         els.brushCursor.classList.add('eraser-mode');
       } else {
         els.brushCursor.classList.remove('eraser-mode');
-        els.brushCursor.classList.add('brush-mode');
       }
-    }
-
-    // Update Viewport Cursor class
-    if (toolName === 'select') {
-      els.canvasViewport.classList.add('panning');
-      if (els.brushCursor) els.brushCursor.style.display = 'none';
-    } else {
-      els.canvasViewport.classList.remove('panning');
     }
   }
 
@@ -482,9 +476,8 @@
     if (els.brushSizeRange) els.brushSizeRange.value = clamped;
     if (els.brushSizeDisplay) els.brushSizeDisplay.textContent = `${clamped} px`;
 
-    // Update preset pills
     if (els.brushPresetPills) {
-      const pills = els.brushPresetPills.querySelectorAll('.preset-pill');
+      const pills = els.brushPresetPills.querySelectorAll('.preset-btn');
       pills.forEach((p) => {
         p.classList.toggle('active', parseInt(p.dataset.size, 10) === clamped);
       });
@@ -495,13 +488,13 @@
 
   function updateBrushCursorSize() {
     if (!els.brushCursor) return;
-    // Inside canvasContainer, coordinates are 1:1 in natural image pixels!
+    // Inside canvasContainer, coords match 1:1 image pixels
     els.brushCursor.style.width = `${state.brushSize}px`;
     els.brushCursor.style.height = `${state.brushSize}px`;
   }
 
   /* ==========================================================================
-     CANVAS DRAWING & POINTER COORDINATES
+     5. CANVAS DRAWING & COORDINATES
      ========================================================================== */
   function getCanvasCoords(clientX, clientY) {
     if (!els.maskCanvas) return { x: 0, y: 0 };
@@ -514,11 +507,23 @@
     };
   }
 
-  function handleCanvasPointerDown(e) {
-    if (e.button !== 0) return; // Only primary mouse button
+  function handleViewportPointerEnter() {
+    if (els.brushCursor && state.currentImage && !state.isPanning) {
+      els.brushCursor.style.display = 'block';
+    }
+  }
 
-    // Check if middle click or space key or Select Tool is active -> Pan
-    if (state.currentTool === 'select' || state.spacePressed || e.button === 1) {
+  function handleViewportPointerLeave() {
+    if (els.brushCursor && !state.isDrawing) {
+      els.brushCursor.style.display = 'none';
+    }
+  }
+
+  function handleCanvasPointerDown(e) {
+    if (e.button !== 0) return; // Only primary click
+
+    // Check if middle click or space key pressed -> Pan
+    if (state.spacePressed || e.button === 1) {
       state.isPanning = true;
       state.panStartX = e.clientX - state.panX;
       state.panStartY = e.clientY - state.panY;
@@ -528,7 +533,6 @@
 
     if (!maskCtx || !state.currentImage) return;
 
-    // Begin drawing stroke
     state.isDrawing = true;
     saveUndoState();
 
@@ -538,7 +542,7 @@
 
     configureMaskContext();
 
-    // Draw single point / dot
+    // Draw single point
     maskCtx.beginPath();
     maskCtx.arc(coords.x, coords.y, state.brushSize / 2, 0, Math.PI * 2);
     maskCtx.fill();
@@ -548,8 +552,8 @@
   }
 
   function handleWindowPointerMove(e) {
-    // 1. Comparison Split Slider Dragging
-    if (state.isDraggingSplit && els.resultCanvas) {
+    // Handle Split Slider Dragging inside Workspace
+    if (state.isDraggingSplit && els.canvasContainer) {
       const rect = els.canvasContainer.getBoundingClientRect();
       const relativeX = e.clientX - rect.left;
       const percent = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
@@ -557,7 +561,7 @@
       return;
     }
 
-    // 2. Viewport Panning
+    // Viewport Panning
     if (state.isPanning) {
       state.panX = e.clientX - state.panStartX;
       state.panY = e.clientY - state.panStartY;
@@ -565,29 +569,15 @@
       return;
     }
 
-    // 3. Update Brush Follower Cursor (Disappears immediately when leaving canvas)
-    if (state.currentImage && els.brushCursor) {
-      const containerRect = els.canvasContainer.getBoundingClientRect();
-      const inCanvas =
-        e.clientX >= containerRect.left &&
-        e.clientX <= containerRect.right &&
-        e.clientY >= containerRect.top &&
-        e.clientY <= containerRect.bottom;
-
-      if (inCanvas && state.currentTool !== 'select') {
-        const visualX = (e.clientX - containerRect.left) / state.zoom;
-        const visualY = (e.clientY - containerRect.top) / state.zoom;
-        els.brushCursor.style.left = `${visualX}px`;
-        els.brushCursor.style.top = `${visualY}px`;
-        updateBrushCursorSize();
-        els.brushCursor.style.display = 'block';
-      } else {
-        els.brushCursor.style.display = 'none';
-      }
+    // Update brush cursor position
+    if (els.brushCursor && els.maskCanvas) {
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      els.brushCursor.style.left = `${coords.x}px`;
+      els.brushCursor.style.top = `${coords.y}px`;
     }
 
-    // 4. Drawing on Mask Canvas
-    if (!state.isDrawing || !maskCtx) return;
+    // Continuous Brush Stroke Drawing
+    if (!state.isDrawing || !maskCtx || !state.currentImage) return;
 
     const coords = getCanvasCoords(e.clientX, e.clientY);
     configureMaskContext();
@@ -605,9 +595,7 @@
   function handleWindowPointerUp() {
     if (state.isPanning) {
       state.isPanning = false;
-      if (state.currentTool !== 'select') {
-        els.canvasViewport.classList.remove('panning');
-      }
+      els.canvasViewport.classList.remove('panning');
     }
     if (state.isDrawing) {
       state.isDrawing = false;
@@ -654,7 +642,7 @@
   }
 
   /* ==========================================================================
-     UNDO / REDO STACK
+     6. UNDO / REDO / CLEAR
      ========================================================================== */
   function saveUndoState() {
     if (!maskCtx || !state.imageWidth || !state.imageHeight) return;
@@ -699,11 +687,11 @@
     maskCtx.clearRect(0, 0, state.imageWidth, state.imageHeight);
     state.hasMaskSelection = false;
     updateUIState();
-    showToast('Mask selection cleared.', 'info');
+    showToast('Mask cleared.', 'info');
   }
 
   /* ==========================================================================
-     ZOOM & VIEWPORT PANNING (SMOOTH & CURSOR-ALIGNED)
+     7. ZOOM & PANNING
      ========================================================================== */
   function zoomIn() {
     const next = ZOOM_STEPS.find((z) => z > state.zoom + 0.05);
@@ -718,7 +706,7 @@
   function zoomFit() {
     if (!state.imageWidth || !state.imageHeight || !els.canvasViewport) return;
     const viewW = els.canvasViewport.clientWidth - 48;
-    const viewH = els.canvasViewport.clientHeight - 80;
+    const viewH = els.canvasViewport.clientHeight - 48;
 
     if (viewW <= 0 || viewH <= 0) return;
 
@@ -749,9 +737,6 @@
 
   function applyTransform(smooth = false) {
     if (!els.canvasContainer) return;
-    els.canvasContainer.style.setProperty('--pan-x', `${state.panX}px`);
-    els.canvasContainer.style.setProperty('--pan-y', `${state.panY}px`);
-    els.canvasContainer.style.setProperty('--zoom-val', `${state.zoom}`);
 
     if (smooth) {
       els.canvasContainer.style.transition = 'transform 0.14s cubic-bezier(0.2, 0, 0, 1)';
@@ -768,7 +753,7 @@
   function handleCanvasWheel(e) {
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
-      // Zoom around pointer position
+      // Zoom centered on pointer
       const rect = els.canvasViewport.getBoundingClientRect();
       const pointerX = e.clientX - rect.left - rect.width / 2;
       const pointerY = e.clientY - rect.top - rect.height / 2;
@@ -777,12 +762,10 @@
       const zoomDelta = e.deltaY < 0 ? 1.12 : 0.89;
       const newZoom = Math.max(0.1, Math.min(8.0, oldZoom * zoomDelta));
 
-      // Adjust pan to zoom into pointer
       state.panX -= (pointerX - state.panX) * (newZoom / oldZoom - 1);
       state.panY -= (pointerY - state.panY) * (newZoom / oldZoom - 1);
       setZoom(newZoom, false);
     } else {
-      // Pan on trackpad / wheel
       state.panX -= e.deltaX;
       state.panY -= e.deltaY;
       applyTransform(false);
@@ -790,7 +773,7 @@
   }
 
   /* ==========================================================================
-     AI OBJECT REMOVAL (REAL BACKEND INTEGRATION & PROCESSING OVERLAY)
+     8. AI OBJECT REMOVAL (REAL BACKEND INTEGRATION & NO VIEWPORT JUMP)
      ========================================================================== */
   async function executeObjectRemoval() {
     if (state.isProcessing) return;
@@ -805,29 +788,31 @@
       return;
     }
 
+    // Start latency measurement on client
     const clientStartTime = performance.now();
+
     try {
       state.isProcessing = true;
       updateUIState();
 
-      // 6 & 7. Activate in-canvas processing overlay & soft shimmer pulse strictly on masked region
-      startProcessingVisuals();
+      // Start non-intrusive in-canvas rotating status stages
+      startProcessingStages();
 
-      // 1. Export active image to PNG blob
+      // Export base image to PNG blob
       const imageBlob = await new Promise((resolve) => {
         els.imageCanvas.toBlob(resolve, 'image/png');
       });
 
-      // 2. Export strict binary mask to PNG blob (white = remove, black = keep)
+      // Export strict binary mask to PNG blob (white = remove, black = keep)
       const maskBlob = await generateStrictBinaryMaskBlob();
 
-      // 3. Assemble multipart FormData
+      // Assemble FormData
       const formData = new FormData();
       formData.append('image', imageBlob, 'image.png');
       formData.append('mask', maskBlob, 'mask.png');
-      formData.append('prompt', 'seamless background fill, photorealistic, clean texture');
+      formData.append('prompt', 'seamless background inpainting, photorealistic texture fill');
 
-      // 4. Send request to FastAPI backend
+      // Dispatch request to FastAPI backend
       const response = await fetch(REMOVE_OBJECT_ENDPOINT, {
         method: 'POST',
         body: formData,
@@ -839,15 +824,15 @@
           const errData = await response.json();
           errMessage = errData.detail?.message || errData.message || errMessage;
         } catch (_) {
-          errMessage = `Server responded with status ${response.status}`;
+          errMessage = `Server error (${response.status})`;
         }
         throw new Error(errMessage);
       }
 
-      // Capture server timing header from FastAPI backend
+      // Read real backend latency header
       const serverProcessTimeMs = response.headers.get('X-Process-Time-Ms');
 
-      // 5. Decode returned result PNG image
+      // Decode returned result image
       const resultBlob = await response.blob();
       state.resultBlob = resultBlob;
 
@@ -863,10 +848,10 @@
       state.resultImage = resultImg;
       state.hasResult = true;
 
-      // 8. RESULT REVEAL: Smoothly remove processing state & fade final image in
-      stopProcessingVisuals();
+      // Stop processing status card
+      stopProcessingStages();
 
-      // Render onto Result Canvas with subtle entrance
+      // Render onto Result Canvas
       if (resultCtx) {
         resultCtx.clearRect(0, 0, state.imageWidth, state.imageHeight);
         resultCtx.drawImage(resultImg, 0, 0, state.imageWidth, state.imageHeight);
@@ -878,7 +863,7 @@
         els.resultCanvas.classList.add('active');
       }
 
-      // Enable split slider
+      // Enable interactive comparison slider inside SAME workspace
       if (els.splitSlider) els.splitSlider.style.display = 'block';
       updateSplitSliderPosition(50);
 
@@ -894,11 +879,11 @@
         }, 260);
       }
 
-      // True browser-side latency finish: covers mask prep + network + inference + download + decode + render
+      // Compute total client end-to-end time
       const clientEndTime = performance.now();
       const e2eSeconds = ((clientEndTime - clientStartTime) / 1000).toFixed(2);
 
-      // Reveal Result Controls in right contextual panel with metrics
+      // Reveal Result Controls in tools panel with real measurements
       if (els.resultControls) {
         els.resultControls.style.display = 'flex';
       }
@@ -914,14 +899,13 @@
             els.serverTimeVal.textContent = 'N/A';
           }
         }
-        els.resultMetrics.style.display = 'block';
       }
 
-      console.info(`[Latency] Client End-to-End: ${e2eSeconds}s | Server API: ${serverProcessTimeMs ? serverProcessTimeMs + 'ms' : 'N/A'}`);
+      // NOTE: Zero window.scrollTo or element.scrollIntoView called! User stays perfectly centered.
       showToast(`Object removed successfully in ${e2eSeconds}s.`, 'success');
     } catch (err) {
-      console.error('AI Object Removal Error:', err);
-      stopProcessingVisuals();
+      console.error('Removal Error:', err);
+      stopProcessingStages();
       showToast(err.message || 'Unable to process image. Please try again.', 'error');
     } finally {
       state.isProcessing = false;
@@ -929,41 +913,31 @@
     }
   }
 
-  function startProcessingVisuals() {
-    // 1. Shimmer pulse on mask layer
-    if (els.maskCanvas) {
-      els.maskCanvas.classList.add('mask-processing');
+  function startProcessingStages() {
+    if (els.maskCanvas) els.maskCanvas.classList.add('mask-processing');
+    if (els.processingStatusCard) els.processingStatusCard.style.display = 'flex';
+
+    let currentStageIndex = 0;
+    if (els.processingStageDisplay) {
+      els.processingStageDisplay.textContent = PROCESSING_STAGES[0];
     }
 
-    // 2. Show in-canvas processing card
-    if (els.processingStatusCard) {
-      els.processingStatusCard.style.display = 'inline-flex';
-    }
-
-    // 3. Cycle subline phases gracefully without fake percentages
-    const phases = [els.phase1, els.phase2, els.phase3].filter(Boolean);
-    let currentPhaseIdx = 0;
-
-    phases.forEach((p, idx) => p.classList.toggle('active', idx === 0));
-
-    if (state.processingPhaseTimer) clearInterval(state.processingPhaseTimer);
-    state.processingPhaseTimer = setInterval(() => {
-      currentPhaseIdx = (currentPhaseIdx + 1) % phases.length;
-      phases.forEach((p, idx) => p.classList.toggle('active', idx === currentPhaseIdx));
-    }, 2200);
+    if (state.processingStageTimer) clearInterval(state.processingStageTimer);
+    state.processingStageTimer = setInterval(() => {
+      currentStageIndex = (currentStageIndex + 1) % PROCESSING_STAGES.length;
+      if (els.processingStageDisplay) {
+        els.processingStageDisplay.textContent = PROCESSING_STAGES[currentStageIndex];
+      }
+    }, 1800);
   }
 
-  function stopProcessingVisuals() {
-    if (state.processingPhaseTimer) {
-      clearInterval(state.processingPhaseTimer);
-      state.processingPhaseTimer = null;
+  function stopProcessingStages() {
+    if (state.processingStageTimer) {
+      clearInterval(state.processingStageTimer);
+      state.processingStageTimer = null;
     }
-    if (els.maskCanvas) {
-      els.maskCanvas.classList.remove('mask-processing');
-    }
-    if (els.processingStatusCard) {
-      els.processingStatusCard.style.display = 'none';
-    }
+    if (els.maskCanvas) els.maskCanvas.classList.remove('mask-processing');
+    if (els.processingStatusCard) els.processingStatusCard.style.display = 'none';
   }
 
   function generateStrictBinaryMaskBlob() {
@@ -994,8 +968,8 @@
   }
 
   /* ==========================================================================
-     BEFORE / AFTER SPLIT SLIDER
-     ========================================================================= */
+     9. BEFORE / AFTER COMPARISON SLIDER (EDITOR)
+     ========================================================================== */
   function updateSplitSliderPosition(percent) {
     state.splitSliderPos = percent;
     if (els.splitSlider) {
@@ -1008,9 +982,9 @@
   }
 
   /* ==========================================================================
-     13. DOWNLOAD FEEDBACK & RESULT ACTIONS
+     10. RESULT ACTIONS & DOWNLOAD
      ========================================================================== */
-  function handleDownloadFeedback() {
+  function handleDownloadResult() {
     const blobToDownload = state.resultBlob;
     if (!blobToDownload && !state.currentImage) {
       showToast('No image available to download.', 'error');
@@ -1019,12 +993,9 @@
 
     const downloadBtn = els.downloadResultBtn;
     const labelSpan = els.downloadBtnLabel;
-    const exportLabel = els.exportBtnLabel;
 
-    // Step 1: Preparing...
-    if (downloadBtn) downloadBtn.classList.add('download-preparing');
+    if (downloadBtn) downloadBtn.classList.add('downloading');
     if (labelSpan) labelSpan.textContent = 'Preparing...';
-    if (exportLabel) exportLabel.textContent = 'Preparing...';
 
     setTimeout(() => {
       try {
@@ -1032,28 +1003,19 @@
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `canvas-studio-${Date.now()}.png`;
+          const baseName = state.currentFileName.replace(/\.[^/.]+$/, '');
+          a.download = `${baseName}-removed.png`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
 
-          // Step 2: ✓ Downloaded (Only after browser download has actually been triggered!)
-          if (downloadBtn) {
-            downloadBtn.classList.remove('download-preparing');
-            downloadBtn.classList.add('download-success');
-          }
           if (labelSpan) labelSpan.textContent = '✓ Downloaded';
-          if (exportLabel) exportLabel.textContent = '✓ Downloaded';
-          showToast('Full-resolution image downloaded.', 'success');
+          showToast('Image downloaded at original resolution.', 'success');
 
-          // Step 3: Revert smoothly after 1.8s
           setTimeout(() => {
-            if (downloadBtn) {
-              downloadBtn.classList.remove('download-success');
-            }
+            if (downloadBtn) downloadBtn.classList.remove('downloading');
             if (labelSpan) labelSpan.textContent = 'Download Result';
-            if (exportLabel) exportLabel.textContent = 'Export';
           }, 1800);
         };
 
@@ -1063,12 +1025,11 @@
           els.imageCanvas.toBlob((blob) => triggerDownload(blob), 'image/png');
         }
       } catch (err) {
-        if (downloadBtn) downloadBtn.classList.remove('download-preparing');
+        if (downloadBtn) downloadBtn.classList.remove('downloading');
         if (labelSpan) labelSpan.textContent = 'Download Result';
-        if (exportLabel) exportLabel.textContent = 'Export';
         showToast('Download failed. Please try again.', 'error');
       }
-    }, 120);
+    }, 100);
   }
 
   function applyResultAndEditAgain() {
@@ -1090,7 +1051,6 @@
     }
     if (els.splitSlider) els.splitSlider.style.display = 'none';
     if (els.resultControls) els.resultControls.style.display = 'none';
-    if (els.resultMetrics) els.resultMetrics.style.display = 'none';
 
     if (maskCtx) maskCtx.clearRect(0, 0, state.imageWidth, state.imageHeight);
     state.undoStack = [];
@@ -1104,12 +1064,53 @@
   }
 
   /* ==========================================================================
-     KEYBOARD SHORTCUTS & WINDOW RESIZE
+     11. SHOWCASE BEFORE/AFTER COMPARISON SLIDER
+     ========================================================================== */
+  function initShowcaseSlider() {
+    const container = els.showcaseProductSlider;
+    const clip = els.showcaseProductClip;
+    const handle = els.showcaseProductHandle;
+    if (!container || !clip || !handle) return;
+
+    let isDragging = false;
+
+    function setPosition(xPos) {
+      const rect = container.getBoundingClientRect();
+      const relativeX = xPos - rect.left;
+      const percent = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
+      clip.style.width = `${percent}%`;
+      handle.style.left = `${percent}%`;
+    }
+
+    container.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      container.setPointerCapture(e.pointerId);
+      setPosition(e.clientX);
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      setPosition(e.clientX);
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      isDragging = false;
+      try { container.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    container.addEventListener('pointercancel', (e) => {
+      isDragging = false;
+      try { container.releasePointerCapture(e.pointerId); } catch (_) {}
+    });
+  }
+
+  /* ==========================================================================
+     12. KEYBOARD SHORTCUTS & WINDOW RESIZE
      ========================================================================== */
   function handleKeyDown(e) {
     if (isTypingInInput()) return;
 
-    // Spacebar Panning toggle
+    // Spacebar panning
     if (e.code === 'Space' && !state.spacePressed) {
       state.spacePressed = true;
       els.canvasViewport.classList.add('panning');
@@ -1125,35 +1126,33 @@
       redo();
     }
 
-    // Brush / Eraser / Select Tool Shortcuts
+    // Tool shortcuts
     else if (e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey) {
       setTool('brush');
     } else if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.metaKey) {
       setTool('eraser');
-    } else if (e.key.toLowerCase() === 'v' && !e.ctrlKey && !e.metaKey) {
-      setTool('select');
     }
 
-    // Brush Size Adjustments
+    // Brush size
     else if (e.key === '[') {
       setBrushSize(state.brushSize - 10);
     } else if (e.key === ']') {
       setBrushSize(state.brushSize + 10);
     }
 
-    // Fit & 1:1 Shortcuts
+    // Zoom shortcuts
     else if (e.key === '0' && !e.ctrlKey) {
       zoomFit();
     } else if (e.key === '1' && !e.ctrlKey) {
       zoomOriginal();
     }
 
-    // Execute Removal on Enter
+    // Enter to run removal
     else if (e.key === 'Enter' && state.hasMaskSelection && !state.isProcessing) {
       executeObjectRemoval();
     }
 
-    // Escape to Cancel temporary state or Clear Mask
+    // Escape to clear mask
     else if (e.key === 'Escape') {
       if (state.hasMaskSelection) {
         clearMaskSelection();
@@ -1164,9 +1163,7 @@
   function handleKeyUp(e) {
     if (e.code === 'Space') {
       state.spacePressed = false;
-      if (state.currentTool !== 'select') {
-        els.canvasViewport.classList.remove('panning');
-      }
+      els.canvasViewport.classList.remove('panning');
     }
   }
 
@@ -1184,7 +1181,7 @@
   }
 
   /* ==========================================================================
-     UI STATE UPDATER
+     13. UI STATE UPDATER
      ========================================================================== */
   function updateUIState() {
     const hasImage = Boolean(state.currentImage);
@@ -1193,9 +1190,6 @@
 
     if (els.removeObjectBtn) {
       els.removeObjectBtn.disabled = !hasImage || !hasSelection || isProcessing;
-    }
-    if (els.toolRemoveQuickBtn) {
-      els.toolRemoveQuickBtn.disabled = !hasImage || !hasSelection || isProcessing;
     }
 
     if (els.removeBtnSpinner) {
@@ -1206,29 +1200,27 @@
     }
     if (els.removeBtnLabel) {
       els.removeBtnLabel.textContent = isProcessing
-        ? 'Removing with AI...'
+        ? 'Removing Object...'
         : 'Remove Object with AI';
     }
 
     if (els.actionCaption) {
       if (isProcessing) {
-        els.actionCaption.textContent = 'Synthesizing clean background texture...';
+        els.actionCaption.textContent = 'Reconstructing background with AI...';
       } else if (!hasSelection) {
-        els.actionCaption.textContent = 'Paint over the object you wish to remove.';
+        els.actionCaption.textContent = 'Paint over the object you want to remove.';
       } else {
-        els.actionCaption.textContent = 'Ready to inpaint. Click button or press Enter.';
+        els.actionCaption.textContent = 'Ready to remove. Click button or press Enter.';
       }
     }
 
     if (els.toolUndoBtn) els.toolUndoBtn.disabled = state.undoStack.length === 0;
     if (els.toolRedoBtn) els.toolRedoBtn.disabled = state.redoStack.length === 0;
-
     if (els.toolClearMaskBtn) els.toolClearMaskBtn.disabled = !hasSelection;
-    if (els.clearSelectionBtn) els.clearSelectionBtn.disabled = !hasSelection;
   }
 
   /* ==========================================================================
-     TOAST NOTIFICATION HELPER
+     14. TOAST NOTIFICATION HELPER
      ========================================================================== */
   function showToast(message, type = 'info') {
     if (!els.toastContainer) return;
@@ -1241,10 +1233,10 @@
     setTimeout(() => {
       toast.classList.remove('show');
       setTimeout(() => toast.remove(), 250);
-    }, 3500);
+    }, 3200);
   }
 
-  // Run on DOM ready
+  // Initialize on DOM Ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

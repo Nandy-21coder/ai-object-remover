@@ -414,6 +414,22 @@ async def serve_js():
     return FileResponse(js_file, media_type="application/javascript")
 
 
+@app.get("/assets/{filename}")
+async def serve_frontend_asset(filename: str):
+    asset_file = FRONTEND_DIR / "assets" / filename
+    if asset_file.exists() and asset_file.is_file():
+        return FileResponse(asset_file)
+    raise HTTPException(status_code=404, detail="Asset not found")
+
+
+@app.get("/test_assets/{filename}")
+async def serve_test_asset(filename: str):
+    asset_file = PROJECT_ROOT / "test_assets" / filename
+    if asset_file.exists() and asset_file.is_file():
+        return FileResponse(asset_file)
+    raise HTTPException(status_code=404, detail="Asset not found")
+
+
 if __name__ == "__main__":
     import uvicorn
 

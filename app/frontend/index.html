@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Canvas Studio — Professional Object Removal</title>
-  <meta name="description" content="Professional desktop-grade photo editor with local and cloud AI object removal inpainting.">
+  <title>AI Photo Studio — Simple AI Object Remover</title>
+  <meta name="description" content="Erase unwanted objects, people, text, and distractions from your photos with AI-powered background reconstruction. Free, fast, and local.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,293 +13,209 @@
 <body class="studio-app">
 
   <!-- ======================================================================
-       1. TOP BAR
+       1. TOP NAVIGATION
        ====================================================================== -->
-  <header class="studio-topbar" id="studioTopbar">
-    <div class="topbar-left">
-      <div class="studio-brand" id="brandLogo">
-        <svg class="brand-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="4"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <path d="M21 15l-5-5L5 21"></path>
+  <header class="studio-header" id="studioHeader">
+    <div class="nav-container">
+      <a href="#hero" class="brand-identity" aria-label="AI Photo Studio Home">
+        <svg class="brand-logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
+          <path d="M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12"></path>
+          <circle cx="12" cy="12" r="4"></circle>
         </svg>
-        <span class="brand-title">AI Canvas Studio</span>
-      </div>
-      <span class="topbar-divider"></span>
-      <div class="active-tool-badge" id="activeToolBadge">
-        <span class="tool-dot"></span>
-        <span class="tool-name">Object Removal</span>
-      </div>
-    </div>
+        <span class="brand-title">AI Photo Studio</span>
+      </a>
 
-    <div class="topbar-center">
-      <span class="project-title" id="projectTitle">Untitled Document</span>
-    </div>
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#hero" class="nav-item">Home</a>
+        <a href="#features" class="nav-item">Tools</a>
+        <a href="#how-it-works" class="nav-item">How it Works</a>
+        <a href="#showcase" class="nav-item">Use Cases</a>
+      </nav>
 
-    <div class="topbar-right">
-      <button type="button" class="topbar-btn" id="projectsBtn" title="Projects (Coming soon)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-        </svg>
-        <span>Projects</span>
-      </button>
-
-      <button type="button" class="topbar-btn" id="saveBtn" title="Save current project state (Ctrl+S)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-        <span>Save</span>
-      </button>
-
-      <button type="button" class="topbar-btn topbar-btn-export" id="exportBtn" title="Export full resolution image">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span id="exportBtnLabel">Export</span>
-      </button>
-
-      <div class="user-avatar-pill" id="userProfileBtn" title="Studio Account">
-        <span class="avatar-circle">AC</span>
+      <div class="nav-actions">
+        <button type="button" class="btn-nav-text" id="navLoginBtn">Log in</button>
+        <a href="#contact" class="btn-nav-primary" id="navContactBtn">Contact</a>
       </div>
     </div>
   </header>
 
   <!-- ======================================================================
-       2. MAIN STUDIO WORKSPACE
+       2. HERO SECTION
        ====================================================================== -->
-  <div class="studio-workspace" id="studioWorkspace">
+  <section class="hero-section" id="hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span class="badge-text">Next-Generation Neural Inpainting</span>
+      </div>
 
-    <!-- LEFT TOOLBAR -->
-    <aside class="studio-left-toolbar" id="leftToolbar" aria-label="Editor Tools">
-      <div class="toolbar-group">
-        <button type="button" class="tool-btn" id="toolSelectBtn" data-tool="select" title="Select / Pan (V)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-            <path d="M13 13l6 6"></path>
-          </svg>
-          <span class="tool-tooltip">Select (V)</span>
-        </button>
+      <h1 class="hero-headline">Remove Anything.<br>Keep Everything Else.</h1>
+      
+      <p class="hero-subtext">
+        Erase unwanted objects, people, text and distractions with AI-powered image reconstruction.
+      </p>
 
-        <button type="button" class="tool-btn active" id="toolBrushBtn" data-tool="brush" title="Mask Brush (B)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
-            <path d="M7.07 14.94c-1.66 0-3 1.34-3 3 0 1.94 1.5 3.06 3 3.06 1.7 0 2.94-1.34 2.94-3 0-1.66-1.28-3.06-2.94-3.06z"></path>
+      <div class="hero-actions">
+        <button type="button" class="btn-hero-cta" id="heroStartBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
-          <span class="tool-tooltip">Brush (B)</span>
-        </button>
-
-        <button type="button" class="tool-btn" id="toolEraserBtn" data-tool="eraser" title="Erase Mask (E)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
-            <path d="M22 21H7"></path>
-            <path d="m5 11 9 9"></path>
-          </svg>
-          <span class="tool-tooltip">Eraser (E)</span>
-        </button>
-
-        <button type="button" class="tool-btn tool-btn-action" id="toolRemoveQuickBtn" title="Remove Selected Object (Enter)" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-          </svg>
-          <span class="tool-tooltip">Remove Object (Enter)</span>
+          <span>Start Creating</span>
         </button>
       </div>
 
-      <div class="toolbar-separator"></div>
+      <p class="hero-caption">No complicated editing. Upload, brush, remove.</p>
+    </div>
+  </section>
 
-      <div class="toolbar-group">
-        <button type="button" class="tool-btn" id="toolUndoBtn" title="Undo (Ctrl+Z)" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7v6h6"></path>
-            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-          </svg>
-          <span class="tool-tooltip">Undo (Ctrl+Z)</span>
-        </button>
-
-        <button type="button" class="tool-btn" id="toolRedoBtn" title="Redo (Ctrl+Shift+Z)" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 7v6h-6"></path>
-            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-          </svg>
-          <span class="tool-tooltip">Redo (Ctrl+Shift+Z)</span>
-        </button>
+  <!-- ======================================================================
+       3. UPLOAD AREA (VISUAL CENTER BEFORE IMAGE SELECTION)
+       ====================================================================== -->
+  <section class="upload-section" id="uploadSection" aria-label="Upload Photo">
+    <div class="upload-card" id="dropZone" tabindex="0" role="button" aria-label="Upload your photo. Drop image here or click to browse files">
+      <div class="upload-icon-wrapper">
+        <svg class="upload-cloud-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+          <path d="M12 12v9"></path>
+          <path d="m8 16 4-4 4 4"></path>
+        </svg>
       </div>
 
-      <div class="toolbar-spacer"></div>
+      <h2 class="upload-title">Upload your photo</h2>
+      <p class="upload-instructions">
+        Drag &amp; drop an image here or <button type="button" class="browse-link-btn" id="browseFilesBtn">Browse files</button>
+      </p>
 
-      <div class="toolbar-group toolbar-group-bottom">
-        <button type="button" class="tool-btn" id="toolClearMaskBtn" title="Clear Mask Selection (Esc)" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      <div class="upload-specs">
+        <span class="spec-pill">JPG</span>
+        <span class="spec-pill">PNG</span>
+        <span class="spec-pill">WEBP</span>
+        <span class="spec-divider">•</span>
+        <span class="spec-limit">Maximum size 25MB</span>
+      </div>
+
+      <div class="upload-hint">
+        <span>Tip: You can also paste an image directly from your clipboard (<kbd>Ctrl+V</kbd>)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       4. CENTERED EDITING WORKSPACE (TRANSITIONS IN-PLACE UPON UPLOAD)
+       ====================================================================== -->
+  <section class="editor-section" id="editorSection" style="display: none;" aria-label="Interactive AI Editor">
+    
+    <!-- Editor Header Bar -->
+    <div class="editor-subnav">
+      <div class="subnav-left">
+        <div class="file-info-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
-          <span class="tool-tooltip">Clear Mask (Esc)</span>
-        </button>
+          <span class="file-name-text" id="imageFilename">image.png</span>
+          <span class="file-dims-text" id="imageDimensions">1920 × 1080 px</span>
+        </div>
+      </div>
 
-        <button type="button" class="tool-btn" id="toolNewPhotoBtn" title="Open New Photo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="subnav-center">
+        <div class="zoom-controls" role="group" aria-label="Zoom controls">
+          <button type="button" class="zoom-btn" id="zoomOutBtn" title="Zoom Out" aria-label="Zoom Out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <span class="zoom-text" id="zoomLevelDisplay">100%</span>
+          <button type="button" class="zoom-btn" id="zoomInBtn" title="Zoom In" aria-label="Zoom In">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <span class="zoom-sep"></span>
+          <button type="button" class="zoom-pill-btn" id="zoomFitBtn" title="Fit to Viewport">Fit</button>
+          <button type="button" class="zoom-pill-btn" id="zoomOriginalBtn" title="Original 1:1 Scale">1:1</button>
+        </div>
+      </div>
+
+      <div class="subnav-right">
+        <button type="button" class="btn-subnav-ghost" id="toolNewPhotoBtn" title="Choose another image">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14"></path>
           </svg>
-          <span class="tool-tooltip">New Photo</span>
+          <span>New Photo</span>
         </button>
       </div>
-    </aside>
+    </div>
 
-    <!-- CENTER CANVAS VIEWPORT -->
-    <main class="studio-center-stage" id="centerStage">
+    <!-- Main Workspace: Image Stage + Tools Panel -->
+    <div class="workspace-layout">
 
-      <!-- EMPTY STATE (Before image upload) -->
-      <section class="studio-empty-state" id="emptyState" aria-label="Drop photo to begin">
-        <div class="empty-drop-boundary" id="emptyDropZone">
-          <div class="empty-icon-well">
-            <svg class="dropzone-upload-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-          </div>
+      <!-- LEFT / CENTER: Image Canvas Viewport -->
+      <div class="canvas-viewport" id="canvasViewport">
+        <div class="canvas-container" id="canvasContainer">
+          <!-- 1. Original Image Canvas -->
+          <canvas id="imageCanvas" class="canvas-layer layer-base" aria-label="Source Image"></canvas>
+          
+          <!-- 2. AI Result Inpainted Canvas -->
+          <canvas id="resultCanvas" class="canvas-layer layer-result" aria-label="Inpainted AI Result"></canvas>
+          
+          <!-- 3. Mask Drawing Canvas (Translucent Red/Pink) -->
+          <canvas id="maskCanvas" class="canvas-layer layer-mask" aria-label="Drawn Mask Layer"></canvas>
 
-          <h1 class="empty-heading">Bring your image in.</h1>
-          <p class="empty-description">Drop a photo here or choose a file to start editing.</p>
-
-          <div class="empty-actions">
-            <button type="button" class="btn-studio-primary" id="uploadPhotoBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
+          <!-- 4. Interactive Before/After Split Slider -->
+          <div class="split-slider" id="splitSlider" style="display: none;" aria-label="Before and after comparison slider">
+            <div class="slider-divider-line"></div>
+            <div class="slider-divider-handle" title="Drag to compare before and after">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
-              <span>Upload Photo</span>
-            </button>
-
-            <button type="button" class="btn-studio-secondary" id="pasteClipboardBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
-              <span>Paste from Clipboard</span>
-            </button>
-          </div>
-
-          <div class="empty-meta-hint">
-            <span>Supports JPG, PNG, WebP up to 25MB</span>
-            <span class="meta-sep">•</span>
-            <span>Shortcut: Press <kbd>Ctrl+V</kbd> to paste</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ACTIVE EDITOR CANVAS STAGE (Revealed when image is loaded) -->
-      <section class="studio-canvas-stage" id="canvasStage" style="display: none;" aria-label="Photo Canvas">
-        <div class="canvas-viewport-wrapper" id="canvasViewport">
-          <div class="canvas-pan-container" id="canvasContainer">
-            <!-- 1. Base Original Image Canvas -->
-            <canvas id="imageCanvas" class="editor-layer base-layer" aria-label="Source Image"></canvas>
-
-            <!-- 2. AI Result Inpainted Canvas (for split slider comparison) -->
-            <canvas id="resultCanvas" class="editor-layer result-layer" aria-label="Inpainted Result"></canvas>
-
-            <!-- 3. Mask Drawing Overlay Canvas -->
-            <canvas id="maskCanvas" class="editor-layer mask-layer" aria-label="Mask Drawing Layer"></canvas>
-
-            <!-- 4. Interactive Split Comparison Divider & Handle -->
-            <div class="split-slider-wrapper" id="splitSlider" style="display: none;">
-              <div class="split-slider-line"></div>
-              <div class="split-slider-handle" title="Drag to compare Original vs AI Result">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </div>
-              <span class="split-tag split-tag-before">Before</span>
-              <span class="split-tag split-tag-after">After</span>
             </div>
-
-            <!-- 5. Brush Size Follower Circle Cursor -->
-            <div class="canvas-brush-cursor" id="brushCursor"></div>
+            <span class="slider-pill pill-before">Before</span>
+            <span class="slider-pill pill-after">After</span>
           </div>
+
+          <!-- 5. Brush Size Follower Cursor -->
+          <div class="brush-cursor" id="brushCursor"></div>
         </div>
 
-        <!-- REFINED NON-INTRUSIVE IN-CANVAS PROCESSING OVERLAY -->
-        <div class="canvas-processing-card" id="processingStatusCard" style="display: none;" aria-live="polite">
-          <div class="processing-glyph-ring">
-            <svg class="processing-sparkle-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="m12 2 2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>
-            </svg>
-          </div>
-          <div class="processing-text-block">
-            <div class="processing-headline">Reconstructing your image</div>
-            <div class="processing-subline">
-              <span class="processing-phase active" id="phase1">Analyzing selection</span>
-              <span class="processing-dot">•</span>
-              <span class="processing-phase" id="phase2">Rebuilding background</span>
-              <span class="processing-dot">•</span>
-              <span class="processing-phase" id="phase3">Blending details</span>
-            </div>
+        <!-- In-Canvas Non-Intrusive Rotating Status Card -->
+        <div class="processing-card" id="processingStatusCard" style="display: none;" aria-live="polite">
+          <div class="processing-spinner"></div>
+          <div class="processing-content">
+            <div class="processing-title">AI Processing</div>
+            <div class="processing-stage-text" id="processingStageDisplay">Analyzing image</div>
           </div>
         </div>
-
-        <!-- BOTTOM CANVAS CONTROL BAR -->
-        <div class="bottom-canvas-bar" id="bottomCanvasBar">
-          <div class="canvas-bar-group">
-            <button type="button" class="canvas-bar-btn" id="zoomOutBtn" title="Zoom Out (Ctrl -)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <span class="zoom-level-text" id="zoomLevelDisplay">100%</span>
-            <button type="button" class="canvas-bar-btn" id="zoomInBtn" title="Zoom In (Ctrl +)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-          </div>
-
-          <div class="canvas-bar-separator"></div>
-
-          <div class="canvas-bar-group">
-            <button type="button" class="canvas-bar-btn-pill" id="zoomFitBtn" title="Fit to Screen (0)">Fit</button>
-            <button type="button" class="canvas-bar-btn-pill" id="zoomOriginalBtn" title="Original 1:1 Scale (1)">1:1</button>
-          </div>
-
-          <div class="canvas-bar-separator"></div>
-
-          <div class="canvas-bar-group">
-            <span class="image-dims-badge" id="imageDimensionsBadge">0 × 0 px</span>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- RIGHT CONTEXTUAL PANEL: OBJECT REMOVAL -->
-    <aside class="studio-right-panel" id="rightPanel" style="display: none;" aria-label="Contextual Inspector">
-      <div class="panel-header">
-        <h2 class="panel-title">OBJECT REMOVAL</h2>
       </div>
 
-      <div class="panel-body">
+      <!-- RIGHT: Professional Editing Tools Panel -->
+      <aside class="tools-panel" id="toolsPanel" aria-label="Editing Tools">
+        <div class="panel-header">
+          <h2 class="panel-heading">Remove Object</h2>
+          <span class="panel-subheading">Select and erase any area</span>
+        </div>
 
-        <!-- Tool Selection Segmented Switch -->
-        <div class="panel-section">
-          <label class="section-label">Tool</label>
-          <div class="segmented-control" role="tablist">
-            <button type="button" class="segmented-btn active" id="panelToolBrush" data-tool="brush" role="tab" aria-selected="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Tool Selection: Brush vs Eraser -->
+        <div class="panel-group">
+          <label class="panel-label">Tool Mode</label>
+          <div class="tool-switch" role="tablist">
+            <button type="button" class="tool-switch-btn active" id="toolBrushBtn" data-tool="brush" role="tab" aria-selected="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
                 <path d="M7.07 14.94c-1.66 0-3 1.34-3 3 0 1.94 1.5 3.06 3 3.06 1.7 0 2.94-1.34 2.94-3 0-1.66-1.28-3.06-2.94-3.06z"></path>
               </svg>
               <span>Brush</span>
             </button>
-            <button type="button" class="segmented-btn" id="panelToolEraser" data-tool="eraser" role="tab" aria-selected="false">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button type="button" class="tool-switch-btn" id="toolEraserBtn" data-tool="eraser" role="tab" aria-selected="false">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
                 <path d="M22 21H7"></path>
               </svg>
@@ -308,74 +224,81 @@
           </div>
         </div>
 
-        <!-- Brush Size Slider & Quick Presets -->
-        <div class="panel-section">
-          <div class="section-row">
-            <label for="brushSizeRange" class="section-label">Brush Size</label>
-            <span class="section-value" id="brushSizeDisplay">30 px</span>
+        <!-- Brush Size Slider with Presets -->
+        <div class="panel-group">
+          <div class="label-row">
+            <label for="brushSizeRange" class="panel-label">Brush Size</label>
+            <span class="value-badge" id="brushSizeDisplay">30 px</span>
           </div>
-          <div class="slider-wrapper">
-            <input type="range" id="brushSizeRange" min="5" max="150" value="30" step="1" class="studio-range" aria-label="Brush size in pixels">
+          <div class="slider-container">
+            <input type="range" id="brushSizeRange" min="5" max="150" value="30" step="1" class="modern-slider" aria-label="Adjust brush diameter in pixels">
           </div>
-          <div class="preset-pills-row" id="brushPresetPills">
-            <button type="button" class="preset-pill" data-size="15" title="15px Brush">15</button>
-            <button type="button" class="preset-pill active" data-size="30" title="30px Brush">30</button>
-            <button type="button" class="preset-pill" data-size="60" title="60px Brush">60</button>
-            <button type="button" class="preset-pill" data-size="100" title="100px Brush">100</button>
+          <div class="size-preset-row" id="brushPresetPills">
+            <button type="button" class="preset-btn" data-size="15">Small (15)</button>
+            <button type="button" class="preset-btn active" data-size="30">Medium (30)</button>
+            <button type="button" class="preset-btn" data-size="60">Large (60)</button>
           </div>
         </div>
 
-        <!-- Mask Clearing Controls -->
-        <div class="panel-section">
-          <label class="section-label">Mask Selection</label>
-          <div class="btn-grid-2">
-            <button type="button" class="panel-btn-secondary" id="eraseMaskBtn" title="Switch to eraser tool (E)">
+        <!-- History & Clear Controls -->
+        <div class="panel-group">
+          <label class="panel-label">Mask Actions</label>
+          <div class="action-grid-3">
+            <button type="button" class="panel-btn-subtle" id="toolUndoBtn" title="Undo stroke (Ctrl+Z)" disabled>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
-                <path d="M22 21H7"></path>
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
               </svg>
-              <span>Erase Mask</span>
+              <span>Undo</span>
             </button>
-            <button type="button" class="panel-btn-secondary" id="clearSelectionBtn" title="Clear all drawn mask selection (Esc)">
+            <button type="button" class="panel-btn-subtle" id="toolRedoBtn" title="Redo stroke (Ctrl+Y)" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 7v6h-6"></path>
+                <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+              </svg>
+              <span>Redo</span>
+            </button>
+            <button type="button" class="panel-btn-subtle" id="toolClearMaskBtn" title="Clear entire mask (Esc)" disabled>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              <span>Clear Selection</span>
+              <span>Clear</span>
             </button>
           </div>
         </div>
 
-        <!-- Primary Action: Remove Object with AI -->
-        <div class="panel-section">
-          <button type="button" class="btn-studio-action" id="removeObjectBtn" disabled>
-            <span class="btn-action-spinner" id="removeBtnSpinner" style="display: none;"></span>
-            <svg class="btn-action-icon" id="removeBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        <!-- Primary Action Button: Remove Object with AI -->
+        <div class="panel-group action-group">
+          <button type="button" class="btn-primary-action" id="removeObjectBtn" disabled>
+            <span class="btn-spinner" id="removeBtnSpinner" style="display: none;"></span>
+            <svg class="btn-magic-icon" id="removeBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
             </svg>
             <span id="removeBtnLabel">Remove Object with AI</span>
           </button>
-          <div class="action-caption" id="actionCaption">Paint over the object you wish to remove.</div>
+          <p class="action-help-text" id="actionCaption">Paint over the object you want to remove.</p>
         </div>
 
-        <!-- RESULT CONTROLS (Appears in-place after successful AI processing) -->
-        <div class="panel-section result-section" id="resultControls" style="display: none;">
-          <div class="result-header">
-            <span class="result-badge result-badge-ready" id="resultBadge">
-              <svg class="result-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Result Controls (Revealed inside the SAME panel after processing) -->
+        <div class="panel-group result-group" id="resultControls" style="display: none;">
+          <div class="result-status-card">
+            <div class="result-status-header">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>AI Result Ready</span>
-            </span>
-            <div class="result-metrics" id="resultMetrics" style="display: none; margin-top: 8px; font-size: 12px; color: #94a3b8; line-height: 1.5; background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
-              <div id="metricsTiming" style="font-weight: 500; color: #f1f5f9;">Processed in <span id="e2eTimeVal" style="color: #38bdf8;">0.00s</span></div>
-              <div id="metricsBreakdown" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">End-to-end: <span id="e2eDetailedVal">0.00s</span> &bull; Server: <span id="serverTimeVal">--</span></div>
+              <span class="result-status-title">Object Successfully Removed</span>
+            </div>
+            
+            <div class="result-metrics" id="resultMetrics">
+              <div class="metric-main">Processed in <span id="e2eTimeVal">0.00s</span></div>
+              <div class="metric-sub" id="metricsBreakdown">End-to-end: <span id="e2eDetailedVal">0.00s</span> • Server: <span id="serverTimeVal">--</span></div>
             </div>
           </div>
 
-          <div class="result-actions-stack">
-            <button type="button" class="btn-studio-primary btn-download" id="downloadResultBtn">
-              <svg class="download-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="result-button-stack">
+            <button type="button" class="btn-result-download" id="downloadResultBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -383,50 +306,363 @@
               <span id="downloadBtnLabel">Download Result</span>
             </button>
 
-            <button type="button" class="panel-btn-secondary" id="editAgainBtn" title="Keep this result and remove another object">
+            <button type="button" class="btn-result-secondary" id="editAgainBtn" title="Keep this result and paint another object">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-              <span>Edit Again</span>
+              <span>Edit Mask</span>
             </button>
 
-            <button type="button" class="panel-btn-secondary" id="tryAnotherBtn" title="Choose another image">
+            <button type="button" class="btn-result-secondary" id="tryAnotherBtn" title="Choose another photo">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
                 <path d="M21 3v5h-5"></path>
                 <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
                 <path d="M8 16H3v5"></path>
               </svg>
-              <span>Try Another Image</span>
+              <span>Try Another Photo</span>
             </button>
           </div>
         </div>
 
-        <!-- Shortcuts Reference Hint -->
-        <div class="panel-footer-shortcuts">
-          <div class="shortcut-row">
-            <span class="shortcut-key"><kbd>B</kbd> Brush</span>
-            <span class="shortcut-key"><kbd>E</kbd> Eraser</span>
+      </aside>
+
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       5. WHAT CAN YOU REMOVE? (FEATURE SECTION)
+       ====================================================================== -->
+  <section class="content-section" id="features">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">What Can You Remove?</h2>
+        <p class="section-desc">Erase any visual distraction in seconds while preserving pristine background quality.</p>
+      </div>
+
+      <div class="feature-grid">
+        <!-- Card 1: People -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
           </div>
-          <div class="shortcut-row">
-            <span class="shortcut-key"><kbd>[</kbd> <kbd>]</kbd> Size</span>
-            <span class="shortcut-key"><kbd>Ctrl+Z</kbd> Undo</span>
+          <h3 class="feature-title">People</h3>
+          <p class="feature-text">Remove tourists, accidental photobombers, or bystanders seamlessly without leaving blurred spots.</p>
+        </div>
+
+        <!-- Card 2: Objects -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Objects</h3>
+          <p class="feature-text">Erase trash cans, poles, wires, clutter, and unwanted items with realistic texture reconstruction.</p>
+        </div>
+
+        <!-- Card 3: Text -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"></polyline>
+              <line x1="9" y1="20" x2="15" y2="20"></line>
+              <line x1="12" y1="4" x2="12" y2="20"></line>
+            </svg>
+          </div>
+          <h3 class="feature-title">Text</h3>
+          <p class="feature-text">Clean up unwanted date stamps, subtitles, street numbers, and captions effortlessly.</p>
+        </div>
+
+        <!-- Card 4: Watermarks -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Watermarks</h3>
+          <p class="feature-text">Clear stock stamps, translucent overlays, and copyright marks with contextual color matching.</p>
+        </div>
+
+        <!-- Card 5: Logos -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+          </div>
+          <h3 class="feature-title">Logos</h3>
+          <p class="feature-text">Eliminate distracting brand emblems or sponsor marks on apparel, vehicles, and products.</p>
+        </div>
+
+        <!-- Card 6: Stickers -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+          </div>
+          <h3 class="feature-title">Stickers</h3>
+          <p class="feature-text">Wipe away social media stickers, emojis, and decorative badges cleanly from any photo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       6. HOW IT WORKS (3-STEP SECTION)
+       ====================================================================== -->
+  <section class="content-section bg-subtle" id="how-it-works">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-desc">Three simple steps to professional image reconstruction.</p>
+      </div>
+
+      <div class="steps-grid">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <h3 class="step-title">Upload your image</h3>
+          <p class="step-text">Drop any JPG, PNG, or WebP photo into the studio. Your image stays in native high resolution.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <h3 class="step-title">Brush over what you want removed</h3>
+          <p class="step-text">Use the precision brush to paint over the unwanted object. The bright overlay indicates the exact target area.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <h3 class="step-title">Let AI rebuild the background</h3>
+          <p class="step-text">Our local deep learning model analyzes context and synthesizes photorealistic textures in seconds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       7. SHOWCASE & REAL USE CASES
+       ====================================================================== -->
+  <section class="content-section" id="showcase">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Showcase &amp; Use Cases</h2>
+        <p class="section-desc">Real-world object removal across e-commerce, travel, and personal photography.</p>
+      </div>
+
+      <div class="showcase-grid">
+        
+        <!-- Showcase Card 1: Product Photos (With Interactive Before/After Comparison Slider!) -->
+        <div class="showcase-card showcase-featured">
+          <div class="showcase-slider-container" id="showcaseProductSlider">
+            <img src="/assets/sample_inpainted_result.png" alt="Product clean after AI removal" class="showcase-img showcase-img-after">
+            <div class="showcase-clip" id="showcaseProductClip" style="width: 50%;">
+              <img src="/assets/sample_mug.png" alt="Product with unwanted sticker before removal" class="showcase-img showcase-img-before">
+            </div>
+            <div class="showcase-slider-handle" id="showcaseProductHandle" style="left: 50%;">
+              <div class="handle-bar"></div>
+              <div class="handle-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+            <span class="showcase-badge badge-left">Original</span>
+            <span class="showcase-badge badge-right">AI Removed</span>
+          </div>
+          <div class="showcase-info">
+            <h3 class="showcase-card-title">Product Photos</h3>
+            <p class="showcase-card-desc">Remove unwanted labels, dust, and stand props to create clean catalog-ready product imagery.</p>
+          </div>
+        </div>
+
+        <!-- Showcase Card 2: Travel Photos -->
+        <div class="showcase-card">
+          <div class="showcase-visual-preview">
+            <div class="preview-badge-row">
+              <span class="badge-tag">Travel</span>
+            </div>
+            <div class="scenario-visual travel-scenario">
+              <div class="scenario-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+                </svg>
+              </div>
+              <div class="scenario-label">Scenic Landmarks</div>
+            </div>
+          </div>
+          <div class="showcase-info">
+            <h3 class="showcase-card-title">Travel Photos</h3>
+            <p class="showcase-card-desc">Erase crowds of tourists, stray luggage, and intrusive signs from memorable vacation shots.</p>
+          </div>
+        </div>
+
+        <!-- Showcase Card 3: Social Media -->
+        <div class="showcase-card">
+          <div class="showcase-visual-preview">
+            <div class="preview-badge-row">
+              <span class="badge-tag">Social</span>
+            </div>
+            <div class="scenario-visual social-scenario">
+              <div class="scenario-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </div>
+              <div class="scenario-label">Portraits &amp; Feeds</div>
+            </div>
+          </div>
+          <div class="showcase-info">
+            <h3 class="showcase-card-title">Social Media</h3>
+            <p class="showcase-card-desc">Polish your portraits by erasing photobombers, wires, and distractions before posting online.</p>
+          </div>
+        </div>
+
+        <!-- Showcase Card 4: Personal Photos -->
+        <div class="showcase-card">
+          <div class="showcase-visual-preview">
+            <div class="preview-badge-row">
+              <span class="badge-tag">Memories</span>
+            </div>
+            <div class="scenario-visual personal-scenario">
+              <div class="scenario-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </div>
+              <div class="scenario-label">Family Memories</div>
+            </div>
+          </div>
+          <div class="showcase-info">
+            <h3 class="showcase-card-title">Personal Photos</h3>
+            <p class="showcase-card-desc">Restore family pictures and old snapshots by eliminating unwanted background clutter or tears.</p>
           </div>
         </div>
 
       </div>
-    </aside>
+    </div>
+  </section>
 
-  </div>
+  <!-- ======================================================================
+       8. TRUST & QUALITY SECTION
+       ====================================================================== -->
+  <section class="content-section bg-subtle" id="trust">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Engineered for Quality &amp; Privacy</h2>
+        <p class="section-desc">Fast, local, and faithful to your original photography.</p>
+      </div>
 
-  <!-- HIDDEN FILE INPUT FOR PHOTO UPLOAD -->
+      <div class="trust-grid">
+        <div class="trust-item">
+          <div class="trust-check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="trust-details">
+            <h4 class="trust-title">Local AI Processing</h4>
+            <p class="trust-text">Runs on your local machine using an optimized LaMa neural pipeline without external cloud dependencies.</p>
+          </div>
+        </div>
+
+        <div class="trust-item">
+          <div class="trust-check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="trust-details">
+            <h4 class="trust-title">High-Quality Reconstruction</h4>
+            <p class="trust-text">Fast Fourier convolutions capture both global structures and detailed high-frequency textures.</p>
+          </div>
+        </div>
+
+        <div class="trust-item">
+          <div class="trust-check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="trust-details">
+            <h4 class="trust-title">Original Dimensions Preserved</h4>
+            <p class="trust-text">Zero automatic downscaling on export. Your photos maintain their original pixel resolution and sharpness.</p>
+          </div>
+        </div>
+
+        <div class="trust-item">
+          <div class="trust-check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="trust-details">
+            <h4 class="trust-title">No Complicated Setup</h4>
+            <p class="trust-text">Instant browser workspace. No installation, accounts, or complex prompt engineering needed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       9. SIMPLE FOOTER
+       ====================================================================== -->
+  <footer class="studio-footer" id="contact">
+    <div class="footer-container">
+      <div class="footer-brand-col">
+        <div class="brand-identity">
+          <svg class="brand-logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
+            <circle cx="12" cy="12" r="4"></circle>
+          </svg>
+          <span class="brand-title">AI Photo Studio</span>
+        </div>
+        <p class="footer-slogan">AI-powered photo cleanup and object removal.</p>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer Navigation">
+        <a href="#hero" class="footer-link">Home</a>
+        <a href="#features" class="footer-link">Tools</a>
+        <a href="#how-it-works" class="footer-link">How it Works</a>
+        <a href="#showcase" class="footer-link">Use Cases</a>
+        <a href="mailto:support@aiphotostudio.local" class="footer-link">Contact</a>
+      </nav>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copyright">&copy; 2026 AI Photo Studio. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- HIDDEN FILE INPUT (Used by Start Creating, Browse, New Photo, Dropzone) -->
   <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-hidden="true">
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="studio-toast-container" id="toastContainer" aria-live="polite"></div>
 
-  <!-- MAIN SCRIPT -->
+  <!-- SCRIPT -->
   <script src="script.js"></script>
 </body>
 </html>
