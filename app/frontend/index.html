@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Canvas Studio — Professional Object Removal</title>
+  <meta name="description" content="Professional desktop-grade photo editor with local and cloud AI object removal inpainting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="studio-app">
+
+  <!-- ======================================================================
+       1. TOP BAR
+       ====================================================================== -->
+  <header class="studio-topbar" id="studioTopbar">
+    <div class="topbar-left">
+      <div class="studio-brand" id="brandLogo">
+        <svg class="brand-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <path d="M21 15l-5-5L5 21"></path>
+        </svg>
+        <span class="brand-title">AI Canvas Studio</span>
+      </div>
+      <span class="topbar-divider"></span>
+      <div class="active-tool-badge" id="activeToolBadge">
+        <span class="tool-dot"></span>
+        <span class="tool-name">Object Removal</span>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <span class="project-title" id="projectTitle">Untitled Document</span>
+    </div>
+
+    <div class="topbar-right">
+      <button type="button" class="topbar-btn" id="projectsBtn" title="Projects (Coming soon)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>Projects</span>
+      </button>
+
+      <button type="button" class="topbar-btn" id="saveBtn" title="Save current project state (Ctrl+S)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span>Save</span>
+      </button>
+
+      <button type="button" class="topbar-btn topbar-btn-export" id="exportBtn" title="Export full resolution image">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span id="exportBtnLabel">Export</span>
+      </button>
+
+      <div class="user-avatar-pill" id="userProfileBtn" title="Studio Account">
+        <span class="avatar-circle">AC</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       2. MAIN STUDIO WORKSPACE
+       ====================================================================== -->
+  <div class="studio-workspace" id="studioWorkspace">
+
+    <!-- LEFT TOOLBAR -->
+    <aside class="studio-left-toolbar" id="leftToolbar" aria-label="Editor Tools">
+      <div class="toolbar-group">
+        <button type="button" class="tool-btn" id="toolSelectBtn" data-tool="select" title="Select / Pan (V)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+            <path d="M13 13l6 6"></path>
+          </svg>
+          <span class="tool-tooltip">Select (V)</span>
+        </button>
+
+        <button type="button" class="tool-btn active" id="toolBrushBtn" data-tool="brush" title="Mask Brush (B)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
+            <path d="M7.07 14.94c-1.66 0-3 1.34-3 3 0 1.94 1.5 3.06 3 3.06 1.7 0 2.94-1.34 2.94-3 0-1.66-1.28-3.06-2.94-3.06z"></path>
+          </svg>
+          <span class="tool-tooltip">Brush (B)</span>
+        </button>
+
+        <button type="button" class="tool-btn" id="toolEraserBtn" data-tool="eraser" title="Erase Mask (E)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+            <path d="M22 21H7"></path>
+            <path d="m5 11 9 9"></path>
+          </svg>
+          <span class="tool-tooltip">Eraser (E)</span>
+        </button>
+
+        <button type="button" class="tool-btn tool-btn-action" id="toolRemoveQuickBtn" title="Remove Selected Object (Enter)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+          </svg>
+          <span class="tool-tooltip">Remove Object (Enter)</span>
+        </button>
+      </div>
+
+      <div class="toolbar-separator"></div>
+
+      <div class="toolbar-group">
+        <button type="button" class="tool-btn" id="toolUndoBtn" title="Undo (Ctrl+Z)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"></path>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+          </svg>
+          <span class="tool-tooltip">Undo (Ctrl+Z)</span>
+        </button>
+
+        <button type="button" class="tool-btn" id="toolRedoBtn" title="Redo (Ctrl+Shift+Z)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 7v6h-6"></path>
+            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+          </svg>
+          <span class="tool-tooltip">Redo (Ctrl+Shift+Z)</span>
+        </button>
+      </div>
+
+      <div class="toolbar-spacer"></div>
+
+      <div class="toolbar-group toolbar-group-bottom">
+        <button type="button" class="tool-btn" id="toolClearMaskBtn" title="Clear Mask Selection (Esc)" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span class="tool-tooltip">Clear Mask (Esc)</span>
+        </button>
+
+        <button type="button" class="tool-btn" id="toolNewPhotoBtn" title="Open New Photo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+          <span class="tool-tooltip">New Photo</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER CANVAS VIEWPORT -->
+    <main class="studio-center-stage" id="centerStage">
+
+      <!-- EMPTY STATE (Before image upload) -->
+      <section class="studio-empty-state" id="emptyState" aria-label="Drop photo to begin">
+        <div class="empty-drop-boundary" id="emptyDropZone">
+          <div class="empty-icon-well">
+            <svg class="dropzone-upload-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+
+          <h1 class="empty-heading">Bring your image in.</h1>
+          <p class="empty-description">Drop a photo here or choose a file to start editing.</p>
+
+          <div class="empty-actions">
+            <button type="button" class="btn-studio-primary" id="uploadPhotoBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Upload Photo</span>
+            </button>
+
+            <button type="button" class="btn-studio-secondary" id="pasteClipboardBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+              <span>Paste from Clipboard</span>
+            </button>
+          </div>
+
+          <div class="empty-meta-hint">
+            <span>Supports JPG, PNG, WebP up to 25MB</span>
+            <span class="meta-sep">•</span>
+            <span>Shortcut: Press <kbd>Ctrl+V</kbd> to paste</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTIVE EDITOR CANVAS STAGE (Revealed when image is loaded) -->
+      <section class="studio-canvas-stage" id="canvasStage" style="display: none;" aria-label="Photo Canvas">
+        <div class="canvas-viewport-wrapper" id="canvasViewport">
+          <div class="canvas-pan-container" id="canvasContainer">
+            <!-- 1. Base Original Image Canvas -->
+            <canvas id="imageCanvas" class="editor-layer base-layer" aria-label="Source Image"></canvas>
+
+            <!-- 2. AI Result Inpainted Canvas (for split slider comparison) -->
+            <canvas id="resultCanvas" class="editor-layer result-layer" aria-label="Inpainted Result"></canvas>
+
+            <!-- 3. Mask Drawing Overlay Canvas -->
+            <canvas id="maskCanvas" class="editor-layer mask-layer" aria-label="Mask Drawing Layer"></canvas>
+
+            <!-- 4. Interactive Split Comparison Divider & Handle -->
+            <div class="split-slider-wrapper" id="splitSlider" style="display: none;">
+              <div class="split-slider-line"></div>
+              <div class="split-slider-handle" title="Drag to compare Original vs AI Result">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+              <span class="split-tag split-tag-before">Before</span>
+              <span class="split-tag split-tag-after">After</span>
+            </div>
+
+            <!-- 5. Brush Size Follower Circle Cursor -->
+            <div class="canvas-brush-cursor" id="brushCursor"></div>
+          </div>
+        </div>
+
+        <!-- REFINED NON-INTRUSIVE IN-CANVAS PROCESSING OVERLAY -->
+        <div class="canvas-processing-card" id="processingStatusCard" style="display: none;" aria-live="polite">
+          <div class="processing-glyph-ring">
+            <svg class="processing-sparkle-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="m12 2 2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/>
+            </svg>
+          </div>
+          <div class="processing-text-block">
+            <div class="processing-headline">Reconstructing your image</div>
+            <div class="processing-subline">
+              <span class="processing-phase active" id="phase1">Analyzing selection</span>
+              <span class="processing-dot">•</span>
+              <span class="processing-phase" id="phase2">Rebuilding background</span>
+              <span class="processing-dot">•</span>
+              <span class="processing-phase" id="phase3">Blending details</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM CANVAS CONTROL BAR -->
+        <div class="bottom-canvas-bar" id="bottomCanvasBar">
+          <div class="canvas-bar-group">
+            <button type="button" class="canvas-bar-btn" id="zoomOutBtn" title="Zoom Out (Ctrl -)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <span class="zoom-level-text" id="zoomLevelDisplay">100%</span>
+            <button type="button" class="canvas-bar-btn" id="zoomInBtn" title="Zoom In (Ctrl +)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="canvas-bar-separator"></div>
+
+          <div class="canvas-bar-group">
+            <button type="button" class="canvas-bar-btn-pill" id="zoomFitBtn" title="Fit to Screen (0)">Fit</button>
+            <button type="button" class="canvas-bar-btn-pill" id="zoomOriginalBtn" title="Original 1:1 Scale (1)">1:1</button>
+          </div>
+
+          <div class="canvas-bar-separator"></div>
+
+          <div class="canvas-bar-group">
+            <span class="image-dims-badge" id="imageDimensionsBadge">0 × 0 px</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT CONTEXTUAL PANEL: OBJECT REMOVAL -->
+    <aside class="studio-right-panel" id="rightPanel" style="display: none;" aria-label="Contextual Inspector">
+      <div class="panel-header">
+        <h2 class="panel-title">OBJECT REMOVAL</h2>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- Tool Selection Segmented Switch -->
+        <div class="panel-section">
+          <label class="section-label">Tool</label>
+          <div class="segmented-control" role="tablist">
+            <button type="button" class="segmented-btn active" id="panelToolBrush" data-tool="brush" role="tab" aria-selected="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
+                <path d="M7.07 14.94c-1.66 0-3 1.34-3 3 0 1.94 1.5 3.06 3 3.06 1.7 0 2.94-1.34 2.94-3 0-1.66-1.28-3.06-2.94-3.06z"></path>
+              </svg>
+              <span>Brush</span>
+            </button>
+            <button type="button" class="segmented-btn" id="panelToolEraser" data-tool="eraser" role="tab" aria-selected="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+                <path d="M22 21H7"></path>
+              </svg>
+              <span>Eraser</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Brush Size Slider & Quick Presets -->
+        <div class="panel-section">
+          <div class="section-row">
+            <label for="brushSizeRange" class="section-label">Brush Size</label>
+            <span class="section-value" id="brushSizeDisplay">30 px</span>
+          </div>
+          <div class="slider-wrapper">
+            <input type="range" id="brushSizeRange" min="5" max="150" value="30" step="1" class="studio-range" aria-label="Brush size in pixels">
+          </div>
+          <div class="preset-pills-row" id="brushPresetPills">
+            <button type="button" class="preset-pill" data-size="15" title="15px Brush">15</button>
+            <button type="button" class="preset-pill active" data-size="30" title="30px Brush">30</button>
+            <button type="button" class="preset-pill" data-size="60" title="60px Brush">60</button>
+            <button type="button" class="preset-pill" data-size="100" title="100px Brush">100</button>
+          </div>
+        </div>
+
+        <!-- Mask Clearing Controls -->
+        <div class="panel-section">
+          <label class="section-label">Mask Selection</label>
+          <div class="btn-grid-2">
+            <button type="button" class="panel-btn-secondary" id="eraseMaskBtn" title="Switch to eraser tool (E)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+                <path d="M22 21H7"></path>
+              </svg>
+              <span>Erase Mask</span>
+            </button>
+            <button type="button" class="panel-btn-secondary" id="clearSelectionBtn" title="Clear all drawn mask selection (Esc)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Clear Selection</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Action: Remove Object with AI -->
+        <div class="panel-section">
+          <button type="button" class="btn-studio-action" id="removeObjectBtn" disabled>
+            <span class="btn-action-spinner" id="removeBtnSpinner" style="display: none;"></span>
+            <svg class="btn-action-icon" id="removeBtnIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span id="removeBtnLabel">Remove Object with AI</span>
+          </button>
+          <div class="action-caption" id="actionCaption">Paint over the object you wish to remove.</div>
+        </div>
+
+        <!-- RESULT CONTROLS (Appears in-place after successful AI processing) -->
+        <div class="panel-section result-section" id="resultControls" style="display: none;">
+          <div class="result-header">
+            <span class="result-badge result-badge-ready" id="resultBadge">
+              <svg class="result-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>AI Result Ready</span>
+            </span>
+            <div class="result-metrics" id="resultMetrics" style="display: none; margin-top: 8px; font-size: 12px; color: #94a3b8; line-height: 1.5; background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06);">
+              <div id="metricsTiming" style="font-weight: 500; color: #f1f5f9;">Processed in <span id="e2eTimeVal" style="color: #38bdf8;">0.00s</span></div>
+              <div id="metricsBreakdown" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">End-to-end: <span id="e2eDetailedVal">0.00s</span> &bull; Server: <span id="serverTimeVal">--</span></div>
+            </div>
+          </div>
+
+          <div class="result-actions-stack">
+            <button type="button" class="btn-studio-primary btn-download" id="downloadResultBtn">
+              <svg class="download-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span id="downloadBtnLabel">Download Result</span>
+            </button>
+
+            <button type="button" class="panel-btn-secondary" id="editAgainBtn" title="Keep this result and remove another object">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              <span>Edit Again</span>
+            </button>
+
+            <button type="button" class="panel-btn-secondary" id="tryAnotherBtn" title="Choose another image">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M8 16H3v5"></path>
+              </svg>
+              <span>Try Another Image</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Shortcuts Reference Hint -->
+        <div class="panel-footer-shortcuts">
+          <div class="shortcut-row">
+            <span class="shortcut-key"><kbd>B</kbd> Brush</span>
+            <span class="shortcut-key"><kbd>E</kbd> Eraser</span>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-key"><kbd>[</kbd> <kbd>]</kbd> Size</span>
+            <span class="shortcut-key"><kbd>Ctrl+Z</kbd> Undo</span>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- HIDDEN FILE INPUT FOR PHOTO UPLOAD -->
+  <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-hidden="true">
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="studio-toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- MAIN SCRIPT -->
+  <script src="script.js"></script>
+</body>
+</html>
