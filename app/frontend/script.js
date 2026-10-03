@@ -1074,43 +1074,46 @@
   }
 
   /* ==========================================================================
-     11. SHOWCASE BEFORE/AFTER COMPARISON SLIDER
+     11. SHOWCASE BEFORE/AFTER COMPARISON SLIDERS (ALL 4 CARDS)
      ========================================================================== */
   function initShowcaseSlider() {
-    const container = els.showcaseProductSlider;
-    const clip = els.showcaseProductClip;
-    const handle = els.showcaseProductHandle;
-    if (!container || !clip || !handle) return;
+    const containers = document.querySelectorAll('.showcase-slider-container');
+    containers.forEach((container) => {
+      const handle = container.querySelector('.showcase-slider-handle');
+      const imgBefore = container.querySelector('.showcase-img-before');
+      if (!handle || !imgBefore) return;
 
-    let isDragging = false;
+      let isDragging = false;
 
-    function setPosition(xPos) {
-      const rect = container.getBoundingClientRect();
-      const relativeX = xPos - rect.left;
-      const percent = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
-      clip.style.width = `${percent}%`;
-      handle.style.left = `${percent}%`;
-    }
+      function setPosition(xPos) {
+        const rect = container.getBoundingClientRect();
+        const relativeX = xPos - rect.left;
+        const percent = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
+        container.style.setProperty('--slider-split', `${percent}%`);
+        handle.style.left = `${percent}%`;
+        imgBefore.style.clipPath = `polygon(0 0, ${percent}% 0, ${percent}% 100%, 0 100%)`;
+      }
 
-    container.addEventListener('pointerdown', (e) => {
-      isDragging = true;
-      container.setPointerCapture(e.pointerId);
-      setPosition(e.clientX);
-    });
+      container.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        try { container.setPointerCapture(e.pointerId); } catch (_) {}
+        setPosition(e.clientX);
+      });
 
-    container.addEventListener('pointermove', (e) => {
-      if (!isDragging) return;
-      setPosition(e.clientX);
-    });
+      container.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        setPosition(e.clientX);
+      });
 
-    container.addEventListener('pointerup', (e) => {
-      isDragging = false;
-      try { container.releasePointerCapture(e.pointerId); } catch (_) {}
-    });
+      const stopDrag = (e) => {
+        if (isDragging) {
+          isDragging = false;
+          try { container.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+      };
 
-    container.addEventListener('pointercancel', (e) => {
-      isDragging = false;
-      try { container.releasePointerCapture(e.pointerId); } catch (_) {}
+      container.addEventListener('pointerup', stopDrag);
+      container.addEventListener('pointercancel', stopDrag);
     });
   }
 

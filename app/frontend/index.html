@@ -468,14 +468,12 @@
 
       <div class="showcase-grid">
         
-        <!-- Showcase Card 1: Product Photos (With Interactive Before/After Comparison Slider!) -->
-        <div class="showcase-card showcase-featured">
-          <div class="showcase-slider-container" id="showcaseProductSlider">
-            <img src="/assets/sample_inpainted_result.png" alt="Product clean after AI removal" class="showcase-img showcase-img-after">
-            <div class="showcase-clip" id="showcaseProductClip" style="width: 50%;">
-              <img src="/assets/sample_mug.png" alt="Product with unwanted sticker before removal" class="showcase-img showcase-img-before">
-            </div>
-            <div class="showcase-slider-handle" id="showcaseProductHandle" style="left: 50%;">
+        <!-- Showcase Card 1: Product Photos -->
+        <div class="showcase-card">
+          <div class="showcase-slider-container">
+            <img src="assets/sample_inpainted_result.png" alt="Product clean after AI removal" class="showcase-img showcase-img-after">
+            <img src="assets/sample_mug.png" alt="Product with unwanted sticker before removal" class="showcase-img showcase-img-before">
+            <div class="showcase-slider-handle">
               <div class="handle-bar"></div>
               <div class="handle-circle">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -497,18 +495,22 @@
 
         <!-- Showcase Card 2: Travel Photos -->
         <div class="showcase-card">
-          <div class="showcase-visual-preview">
-            <div class="preview-badge-row">
-              <span class="badge-tag">Travel</span>
-            </div>
-            <div class="scenario-visual travel-scenario">
-              <div class="scenario-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+          <div class="showcase-slider-container">
+            <img src="assets/showcase_travel_after.png" alt="Travel scenery clean after AI removal" class="showcase-img showcase-img-after">
+            <img src="assets/showcase_travel_before.png" alt="Travel scenery with intrusive sign before removal" class="showcase-img showcase-img-before">
+            <div class="showcase-slider-handle">
+              <div class="handle-bar"></div>
+              <div class="handle-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
-              <div class="scenario-label">Scenic Landmarks</div>
             </div>
+            <span class="showcase-badge badge-left">Original</span>
+            <span class="showcase-badge badge-right">AI Removed</span>
           </div>
           <div class="showcase-info">
             <h3 class="showcase-card-title">Travel Photos</h3>
@@ -518,20 +520,22 @@
 
         <!-- Showcase Card 3: Social Media -->
         <div class="showcase-card">
-          <div class="showcase-visual-preview">
-            <div class="preview-badge-row">
-              <span class="badge-tag">Social</span>
-            </div>
-            <div class="scenario-visual social-scenario">
-              <div class="scenario-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          <div class="showcase-slider-container">
+            <img src="assets/showcase_social_after.png" alt="Cafe social portrait clean after AI removal" class="showcase-img showcase-img-after">
+            <img src="assets/showcase_social_before.png" alt="Cafe social portrait with red cup before removal" class="showcase-img showcase-img-before">
+            <div class="showcase-slider-handle">
+              <div class="handle-bar"></div>
+              <div class="handle-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
-              <div class="scenario-label">Portraits &amp; Feeds</div>
             </div>
+            <span class="showcase-badge badge-left">Original</span>
+            <span class="showcase-badge badge-right">AI Removed</span>
           </div>
           <div class="showcase-info">
             <h3 class="showcase-card-title">Social Media</h3>
@@ -541,18 +545,22 @@
 
         <!-- Showcase Card 4: Personal Photos -->
         <div class="showcase-card">
-          <div class="showcase-visual-preview">
-            <div class="preview-badge-row">
-              <span class="badge-tag">Memories</span>
-            </div>
-            <div class="scenario-visual personal-scenario">
-              <div class="scenario-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          <div class="showcase-slider-container">
+            <img src="assets/showcase_personal_after.png" alt="Family memory clean after AI removal" class="showcase-img showcase-img-after">
+            <img src="assets/showcase_personal_before.png" alt="Family memory with orange date stamp before removal" class="showcase-img showcase-img-before">
+            <div class="showcase-slider-handle">
+              <div class="handle-bar"></div>
+              <div class="handle-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </div>
-              <div class="scenario-label">Family Memories</div>
             </div>
+            <span class="showcase-badge badge-left">Original</span>
+            <span class="showcase-badge badge-right">AI Removed</span>
           </div>
           <div class="showcase-info">
             <h3 class="showcase-card-title">Personal Photos</h3>
