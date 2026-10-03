@@ -83,7 +83,7 @@ def test_root_index_serving():
 
 
 def test_static_files_serving():
-    """Verify GET /style.css and GET /script.js return 200 with correct media types."""
+    """Verify GET /style.css, GET /script.js, and GET /auth.js return 200 with correct media types."""
     res_css = client.get("/style.css")
     assert res_css.status_code == 200
     assert "text/css" in res_css.headers.get("content-type", "")
@@ -91,6 +91,19 @@ def test_static_files_serving():
     res_js = client.get("/script.js")
     assert res_js.status_code == 200
     assert "javascript" in res_js.headers.get("content-type", "")
+
+    res_auth = client.get("/auth.js")
+    assert res_auth.status_code == 200
+    assert "javascript" in res_auth.headers.get("content-type", "")
+
+
+def test_auth_config_endpoint():
+    """Verify GET /api/auth/config returns 200 with expected Supabase config structure."""
+    response = client.get("/api/auth/config")
+    assert response.status_code == 200
+    data = response.json()
+    assert "supabase_url" in data
+    assert "supabase_anon_key" in data
 
 
 # ==============================================================================

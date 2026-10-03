@@ -157,6 +157,15 @@
     attachEventListeners();
     initShowcaseSlider();
     updateUIState();
+
+    // Listen to Auth State changes to safeguard editor view
+    if (window.AuthService) {
+      window.AuthService.onAuthStateChange((user) => {
+        if (!user && els.editorSection && els.editorSection.style.display === 'block') {
+          resetEditorToUpload();
+        }
+      });
+    }
   }
 
   function initCanvasContexts() {
@@ -173,15 +182,27 @@
      2. EVENT LISTENERS
      ========================================================================== */
   function attachEventListeners() {
-    // "Start Creating" CTA directly opens file upload workflow (NO fake/sample generation)
+    // "Start Creating" CTA directly opens file upload workflow (Auth protected)
     if (els.heroStartBtn) {
-      els.heroStartBtn.addEventListener('click', () => els.fileInput.click());
+      els.heroStartBtn.addEventListener('click', () => {
+        if (window.AuthService && !window.AuthService.isAuthenticated()) {
+          window.AuthService.openModal(
+            'login',
+            'Please log in to start creating with AI Photo Studio.',
+            () => els.fileInput.click()
+          );
+          return;
+        }
+        els.fileInput.click();
+      });
     }
 
-    // Top Nav buttons
+    // Top Nav login button
     if (els.navLoginBtn) {
       els.navLoginBtn.addEventListener('click', () => {
-        showToast('Account login is available in Cloud edition. Local mode is unlocked.', 'info');
+        if (window.AuthService) {
+          window.AuthService.openModal('login');
+        }
       });
     }
 
@@ -189,12 +210,28 @@
     if (els.dropZone) {
       els.dropZone.addEventListener('click', (e) => {
         if (e.target !== els.browseFilesBtn) {
+          if (window.AuthService && !window.AuthService.isAuthenticated()) {
+            window.AuthService.openModal(
+              'login',
+              'Please log in to upload and edit photos.',
+              () => els.fileInput.click()
+            );
+            return;
+          }
           els.fileInput.click();
         }
       });
       els.dropZone.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
+          if (window.AuthService && !window.AuthService.isAuthenticated()) {
+            window.AuthService.openModal(
+              'login',
+              'Please log in to upload and edit photos.',
+              () => els.fileInput.click()
+            );
+            return;
+          }
           els.fileInput.click();
         }
       });
@@ -202,6 +239,14 @@
     if (els.browseFilesBtn) {
       els.browseFilesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (window.AuthService && !window.AuthService.isAuthenticated()) {
+          window.AuthService.openModal(
+            'login',
+            'Please log in to upload and edit photos.',
+            () => els.fileInput.click()
+          );
+          return;
+        }
         els.fileInput.click();
       });
     }
@@ -219,10 +264,22 @@
 
     // New Photo / Try Another
     if (els.toolNewPhotoBtn) {
-      els.toolNewPhotoBtn.addEventListener('click', () => els.fileInput.click());
+      els.toolNewPhotoBtn.addEventListener('click', () => {
+        if (window.AuthService && !window.AuthService.isAuthenticated()) {
+          window.AuthService.openModal('login', 'Please log in to upload photos.', () => els.fileInput.click());
+          return;
+        }
+        els.fileInput.click();
+      });
     }
     if (els.tryAnotherBtn) {
-      els.tryAnotherBtn.addEventListener('click', () => els.fileInput.click());
+      els.tryAnotherBtn.addEventListener('click', () => {
+        if (window.AuthService && !window.AuthService.isAuthenticated()) {
+          window.AuthService.openModal('login', 'Please log in to upload photos.', () => els.fileInput.click());
+          return;
+        }
+        els.fileInput.click();
+      });
     }
 
     // Tool switching (Brush vs Eraser)
@@ -354,6 +411,16 @@
   function processSelectedFile(file) {
     if (!file) return;
 
+    // Check authentication: protected AI editing feature
+    if (window.AuthService && !window.AuthService.isAuthenticated()) {
+      window.AuthService.openModal(
+        'login',
+        'Please log in to upload and edit photos.',
+        () => processSelectedFile(file)
+      );
+      return;
+    }
+
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
       showToast('Unsupported format. Please upload JPG, PNG, or WebP.', 'error');
@@ -374,6 +441,22 @@
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  function resetEditorToUpload() {
+    state.initialImage = null;
+    state.currentImage = null;
+    state.resultImage = null;
+    state.resultBlob = null;
+    state.hasResult = false;
+    state.hasMaskSelection = false;
+
+    const heroSec = document.getElementById('hero');
+    if (heroSec) heroSec.style.display = '';
+    if (els.uploadSection) els.uploadSection.style.display = '';
+    if (els.editorSection) els.editorSection.style.display = 'none';
+    if (els.fileInput) els.fileInput.value = '';
+    updateUIState();
   }
 
   function setupEditorWithImage(img, filename) {
@@ -787,6 +870,16 @@
      ========================================================================== */
   async function executeObjectRemoval() {
     if (state.isProcessing) return;
+
+    // Check authentication: protected AI editing feature
+    if (window.AuthService && !window.AuthService.isAuthenticated()) {
+      window.AuthService.openModal(
+        'login',
+        'Please log in to use AI background reconstruction.',
+        () => executeObjectRemoval()
+      );
+      return;
+    }
 
     if (!state.currentImage) {
       showToast('Please upload an image first.', 'error');

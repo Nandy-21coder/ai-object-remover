@@ -35,6 +35,20 @@
 
       <div class="nav-actions">
         <button type="button" class="btn-nav-text" id="navLoginBtn">Log in</button>
+        <div class="nav-user-profile" id="navUserProfile" style="display: none;">
+          <div class="user-pill" id="userPill">
+            <span class="user-avatar" id="userAvatar">U</span>
+            <span class="user-email" id="userEmail">user@example.com</span>
+          </div>
+          <button type="button" class="btn-nav-logout" id="navLogoutBtn" title="Log out">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Log out</span>
+          </button>
+        </div>
         <a href="#contact" class="btn-nav-primary" id="navContactBtn">Contact</a>
       </div>
     </div>
@@ -717,10 +731,203 @@
   <!-- HIDDEN FILE INPUT (Used by Start Creating, Browse, New Photo, Dropzone) -->
   <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-hidden="true">
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div class="studio-toast-container" id="toastContainer" aria-live="polite"></div>
+  <!-- ======================================================================
+       9. AUTHENTICATION MODAL (LOGIN / SIGN UP / FORGOT PASSWORD)
+       ====================================================================== -->
+  <div class="auth-modal-overlay" id="authModalOverlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="auth-modal-card" id="authModalCard">
+      <button type="button" class="auth-modal-close" id="authModalClose" aria-label="Close modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="auth-brand-header">
+        <div class="auth-brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 3v3m0 12v3M3 12h3m12 0h3"></path>
+            <path d="M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12"></path>
+            <circle cx="12" cy="12" r="4"></circle>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Alert / Error Banner -->
+      <div class="auth-alert" id="authAlert" style="display: none;"></div>
+
+      <!-- VIEW 1: LOGIN -->
+      <div class="auth-view" id="viewLogin">
+        <div class="auth-header">
+          <h2 class="auth-title">Welcome back</h2>
+          <p class="auth-subtitle">Log in to continue to AI Photo Studio</p>
+        </div>
+
+        <form class="auth-form" id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="loginEmail" class="form-label">Email address</label>
+            <input type="email" id="loginEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
+            <span class="field-error" id="loginEmailError"></span>
+          </div>
+
+          <div class="form-group">
+            <div class="label-with-link">
+              <label for="loginPassword" class="form-label">Password</label>
+              <button type="button" class="btn-inline-link" id="linkForgotPassword">Forgot password?</button>
+            </div>
+            <div class="password-input-wrapper">
+              <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+              <button type="button" class="btn-toggle-password" data-target="loginPassword" aria-label="Show password">
+                <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <span class="field-error" id="loginPasswordError"></span>
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btnLoginSubmit">
+            <span class="btn-text">Log in</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button type="button" class="btn-google-oauth" id="btnGoogleLogin">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <div class="auth-footer">
+          <span>Don't have an account?</span>
+          <button type="button" class="btn-inline-link font-semibold" id="linkGoToSignup">Sign up</button>
+        </div>
+      </div>
+
+      <!-- VIEW 2: SIGN UP -->
+      <div class="auth-view" id="viewSignup" style="display: none;">
+        <div class="auth-header">
+          <h2 class="auth-title">Create an account</h2>
+          <p class="auth-subtitle">Sign up to get started with AI Photo Studio</p>
+        </div>
+
+        <form class="auth-form" id="signupForm" novalidate>
+          <div class="form-group">
+            <label for="signupEmail" class="form-label">Email address</label>
+            <input type="email" id="signupEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
+            <span class="field-error" id="signupEmailError"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="signupPassword" class="form-label">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="signupPassword" class="form-input" placeholder="At least 6 characters" autocomplete="new-password" required minlength="6">
+              <button type="button" class="btn-toggle-password" data-target="signupPassword" aria-label="Show password">
+                <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <span class="field-error" id="signupPasswordError"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="signupPasswordConfirm" class="form-label">Confirm password</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="signupPasswordConfirm" class="form-input" placeholder="Repeat password" autocomplete="new-password" required>
+              <button type="button" class="btn-toggle-password" data-target="signupPasswordConfirm" aria-label="Show password">
+                <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <span class="field-error" id="signupPasswordConfirmError"></span>
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btnSignupSubmit">
+            <span class="btn-text">Create account</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button type="button" class="btn-google-oauth" id="btnGoogleSignup">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <div class="auth-footer">
+          <span>Already have an account?</span>
+          <button type="button" class="btn-inline-link font-semibold" id="linkGoToLogin">Log in</button>
+        </div>
+      </div>
+
+      <!-- VIEW 3: FORGOT PASSWORD -->
+      <div class="auth-view" id="viewForgotPassword" style="display: none;">
+        <div class="auth-header">
+          <h2 class="auth-title">Reset password</h2>
+          <p class="auth-subtitle">Enter your email and we'll send you instructions to reset your password</p>
+        </div>
+
+        <form class="auth-form" id="forgotPasswordForm" novalidate>
+          <div class="form-group">
+            <label for="resetEmail" class="form-label">Email address</label>
+            <input type="email" id="resetEmail" class="form-input" placeholder="name@example.com" autocomplete="email" required>
+            <span class="field-error" id="resetEmailError"></span>
+          </div>
+
+          <button type="submit" class="btn-auth-submit" id="btnResetSubmit">
+            <span class="btn-text">Send reset link</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          <button type="button" class="btn-inline-link" id="linkBackToLogin">
+            &larr; Back to Log in
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode indicator footer badge -->
+      <div class="auth-mode-hint" id="authModeHint"></div>
+    </div>
+  </div>
 
   <!-- SCRIPT -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

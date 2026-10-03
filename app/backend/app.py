@@ -203,6 +203,16 @@ async def health_check():
     return status_dict
 
 
+@app.get("/api/auth/config")
+async def get_auth_config():
+    """Returns public client auth configuration (Supabase URL and anon key)."""
+    _load_env_file()
+    return {
+        "supabase_url": os.getenv("SUPABASE_URL", "").strip(),
+        "supabase_anon_key": os.getenv("SUPABASE_ANON_KEY", "").strip(),
+    }
+
+
 @app.post("/remove-object")
 @app.post("/api/remove-object")
 @app.post("/api/inpaint")
@@ -419,6 +429,12 @@ async def serve_css():
 async def serve_js():
     js_file = FRONTEND_DIR / "script.js"
     return FileResponse(js_file, media_type="application/javascript")
+
+
+@app.get("/auth.js")
+async def serve_auth_js():
+    auth_file = FRONTEND_DIR / "auth.js"
+    return FileResponse(auth_file, media_type="application/javascript")
 
 
 @app.get("/assets/{filename}")
