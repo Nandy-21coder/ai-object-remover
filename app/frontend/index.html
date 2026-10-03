@@ -181,6 +181,9 @@
           <!-- 3. Mask Drawing Canvas (Translucent Red/Pink) -->
           <canvas id="maskCanvas" class="canvas-layer layer-mask" aria-label="Drawn Mask Layer"></canvas>
 
+          <!-- 3b. AI Smart Circle Neon Guide Layer -->
+          <canvas id="circleGuideCanvas" class="canvas-layer layer-circle-guide" aria-label="Smart Circle Guide Trace"></canvas>
+
           <!-- 4. Interactive Before/After Split Slider -->
           <div class="split-slider" id="splitSlider" style="display: none;" aria-label="Before and after comparison slider">
             <div class="slider-divider-line"></div>
@@ -217,18 +220,25 @@
           <span class="panel-subheading">Select and erase any area</span>
         </div>
 
-        <!-- Tool Selection: Brush vs Eraser -->
+        <!-- Tool Selection: Brush vs Smart Circle vs Eraser -->
         <div class="panel-group">
           <label class="panel-label">Tool Mode</label>
           <div class="tool-switch" role="tablist">
-            <button type="button" class="tool-switch-btn active" id="toolBrushBtn" data-tool="brush" role="tab" aria-selected="true">
+            <button type="button" class="tool-switch-btn active" id="toolBrushBtn" data-tool="brush" role="tab" aria-selected="true" title="Brush tool: paint directly over objects">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"></path>
                 <path d="M7.07 14.94c-1.66 0-3 1.34-3 3 0 1.94 1.5 3.06 3 3.06 1.7 0 2.94-1.34 2.94-3 0-1.66-1.28-3.06-2.94-3.06z"></path>
               </svg>
               <span>Brush</span>
             </button>
-            <button type="button" class="tool-switch-btn" id="toolEraserBtn" data-tool="eraser" role="tab" aria-selected="false">
+            <button type="button" class="tool-switch-btn" id="toolCircleBtn" data-tool="circle" role="tab" aria-selected="false" title="AI Smart Circle: roughly circle any object to select">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="8" stroke-dasharray="3 3"></circle>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
+              </svg>
+              <span>Smart Circle</span>
+            </button>
+            <button type="button" class="tool-switch-btn" id="toolEraserBtn" data-tool="eraser" role="tab" aria-selected="false" title="Eraser tool: trim or erase from mask">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
                 <path d="M22 21H7"></path>
@@ -236,6 +246,7 @@
               <span>Eraser</span>
             </button>
           </div>
+          <div class="tool-hint" id="toolHint">Paint over objects or switch to Smart Circle to roughly loop around them.</div>
         </div>
 
         <!-- Brush Size Slider with Presets -->

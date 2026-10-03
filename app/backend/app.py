@@ -93,6 +93,7 @@ from app.backend.inpainting import (
     InpaintingAPIError,
     LamaInpaintingProvider,
 )
+from app.backend.smart_segmentation import SmartSegmentationService
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -211,6 +212,54 @@ async def get_auth_config():
         "supabase_url": os.getenv("SUPABASE_URL", "").strip(),
         "supabase_anon_key": os.getenv("SUPABASE_ANON_KEY", "").strip(),
     }
+
+
+@app.post("/api/smart-circle-segment")
+async def smart_circle_segment(
+    image: UploadFile = File(..., description="Uploaded image file"),
+    points: str = Form(..., description="JSON array of {'x': int, 'y': int} polygon points"),
+    mode: Optional[str] = Form(default="smart_object"),
+):
+    """
+    AI Smart Circle Selection Endpoint:
+    Segments the primary object encircled by the user's rough loop.
+    """
+    import json
+    try:
+        points_list = json.loads(points)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INVALID_POINTS", "message": "Points must be a valid JSON array of {x, y} coordinates."}
+        )
+
+    if not isinstance(points_list, list) or len(points_list) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INSUFFICIENT_POINTS", "message": "At least 3 points required to define an enclosed circle."}
+        )
+
+    image_bytes = await image.read()
+    if not image_bytes or len(image_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "EMPTY_IMAGE", "message": "Uploaded image file is empty."}
+        )
+
+    try:
+        mask_bytes = await asyncio.to_thread(
+            SmartSegmentationService.segment_enclosed_region,
+            image_bytes,
+            points_list,
+            mode or "smart_object",
+        )
+        return Response(content=mask_bytes, media_type="image/png")
+    except Exception as e:
+        logger.error(f"Smart circle segmentation error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "SEGMENTATION_ERROR", "message": str(e)}
+        )
 
 
 @app.post("/remove-object")

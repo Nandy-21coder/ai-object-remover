@@ -37,9 +37,11 @@
     imageHeight: 0,
 
     // Tools & Drawing
-    currentTool: 'brush', // 'brush' | 'eraser' | 'select'
+    currentTool: 'brush', // 'brush' | 'eraser' | 'circle'
     brushSize: 30,        // 5 to 150 px
     isDrawing: false,
+    isCircling: false,
+    circlePoints: [],
     lastX: 0,
     lastY: 0,
     hasMaskSelection: false,
@@ -99,6 +101,7 @@
     imageCanvas: document.getElementById('imageCanvas'),
     resultCanvas: document.getElementById('resultCanvas'),
     maskCanvas: document.getElementById('maskCanvas'),
+    circleGuideCanvas: document.getElementById('circleGuideCanvas'),
     splitSlider: document.getElementById('splitSlider'),
     brushCursor: document.getElementById('brushCursor'),
 
@@ -109,7 +112,9 @@
     // Right Tools Panel
     toolsPanel: document.getElementById('toolsPanel'),
     toolBrushBtn: document.getElementById('toolBrushBtn'),
+    toolCircleBtn: document.getElementById('toolCircleBtn'),
     toolEraserBtn: document.getElementById('toolEraserBtn'),
+    toolHint: document.getElementById('toolHint'),
     brushSizeRange: document.getElementById('brushSizeRange'),
     brushSizeDisplay: document.getElementById('brushSizeDisplay'),
     brushPresetPills: document.getElementById('brushPresetPills'),
@@ -148,6 +153,7 @@
   let imageCtx = null;
   let resultCtx = null;
   let maskCtx = null;
+  let circleGuideCtx = null;
 
   /* ==========================================================================
      1. INITIALIZATION
@@ -175,6 +181,11 @@
       maskCtx = els.maskCanvas.getContext('2d');
       maskCtx.lineCap = 'round';
       maskCtx.lineJoin = 'round';
+    }
+    if (els.circleGuideCanvas) {
+      circleGuideCtx = els.circleGuideCanvas.getContext('2d');
+      circleGuideCtx.lineCap = 'round';
+      circleGuideCtx.lineJoin = 'round';
     }
   }
 
@@ -282,9 +293,12 @@
       });
     }
 
-    // Tool switching (Brush vs Eraser)
+    // Tool switching (Brush vs Smart Circle vs Eraser)
     if (els.toolBrushBtn) {
       els.toolBrushBtn.addEventListener('click', () => setTool('brush'));
+    }
+    if (els.toolCircleBtn) {
+      els.toolCircleBtn.addEventListener('click', () => setTool('circle'));
     }
     if (els.toolEraserBtn) {
       els.toolEraserBtn.addEventListener('click', () => setTool('eraser'));
@@ -511,7 +525,7 @@
     const w = state.imageWidth;
     const h = state.imageHeight;
 
-    [els.imageCanvas, els.resultCanvas, els.maskCanvas].forEach((canvas) => {
+    [els.imageCanvas, els.resultCanvas, els.maskCanvas, els.circleGuideCanvas].forEach((canvas) => {
       if (canvas) {
         canvas.width = w;
         canvas.height = h;
@@ -526,6 +540,10 @@
     if (maskCtx) {
       maskCtx.clearRect(0, 0, w, h);
       els.maskCanvas.style.opacity = '1';
+    }
+
+    if (circleGuideCtx) {
+      circleGuideCtx.clearRect(0, 0, w, h);
     }
 
     if (els.canvasContainer) {
@@ -544,16 +562,31 @@
       els.toolBrushBtn.classList.toggle('active', toolName === 'brush');
       els.toolBrushBtn.setAttribute('aria-selected', toolName === 'brush');
     }
+    if (els.toolCircleBtn) {
+      els.toolCircleBtn.classList.toggle('active', toolName === 'circle');
+      els.toolCircleBtn.setAttribute('aria-selected', toolName === 'circle');
+    }
     if (els.toolEraserBtn) {
       els.toolEraserBtn.classList.toggle('active', toolName === 'eraser');
       els.toolEraserBtn.setAttribute('aria-selected', toolName === 'eraser');
     }
 
+    if (els.toolHint) {
+      if (toolName === 'circle') {
+        els.toolHint.textContent = 'AI Smart Circle: draw a rough loop around any object to auto-detect its boundary.';
+      } else if (toolName === 'eraser') {
+        els.toolHint.textContent = 'Eraser: brush over selected areas to trim or remove them from the mask.';
+      } else {
+        els.toolHint.textContent = 'Brush: paint directly over unwanted objects to add them to the mask.';
+      }
+    }
+
     if (els.brushCursor) {
+      els.brushCursor.classList.remove('eraser-mode', 'circle-mode');
       if (toolName === 'eraser') {
         els.brushCursor.classList.add('eraser-mode');
-      } else {
-        els.brushCursor.classList.remove('eraser-mode');
+      } else if (toolName === 'circle') {
+        els.brushCursor.classList.add('circle-mode');
       }
     }
   }
@@ -620,7 +653,19 @@
       return;
     }
 
-    if (!maskCtx || !state.currentImage) return;
+    if (!state.currentImage) return;
+
+    // AI Smart Circle Tool Mode
+    if (state.currentTool === 'circle') {
+      state.isCircling = true;
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      state.circlePoints = [coords];
+      clearCircleGuide();
+      renderCircleGuide();
+      return;
+    }
+
+    if (!maskCtx) return;
 
     state.isDrawing = true;
     saveUndoState();
@@ -665,6 +710,17 @@
       els.brushCursor.style.top = `${coords.y}px`;
     }
 
+    // Smart Circle Guide Drawing
+    if (state.isCircling && state.currentImage) {
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      const last = state.circlePoints[state.circlePoints.length - 1];
+      if (!last || Math.hypot(coords.x - last.x, coords.y - last.y) >= 2.5) {
+        state.circlePoints.push(coords);
+        renderCircleGuide();
+      }
+      return;
+    }
+
     // Continuous Brush Stroke Drawing
     if (!state.isDrawing || !maskCtx || !state.currentImage) return;
 
@@ -686,6 +742,18 @@
       state.isPanning = false;
       els.canvasViewport.classList.remove('panning');
     }
+
+    // Complete Smart Circle selection
+    if (state.isCircling) {
+      state.isCircling = false;
+      const pts = state.circlePoints;
+      if (pts && pts.length >= 4) {
+        processSmartCircleSelection(pts);
+      } else {
+        clearCircleGuide();
+      }
+    }
+
     if (state.isDrawing) {
       state.isDrawing = false;
       checkMaskSelection();
@@ -694,6 +762,162 @@
     if (state.isDraggingSplit) {
       state.isDraggingSplit = false;
     }
+  }
+
+  /* ==========================================================================
+     AI SMART CIRCLE SELECTION & SEGMENTATION
+     ========================================================================== */
+  function clearCircleGuide() {
+    if (circleGuideCtx && state.imageWidth && state.imageHeight) {
+      circleGuideCtx.clearRect(0, 0, state.imageWidth, state.imageHeight);
+    }
+  }
+
+  function renderCircleGuide() {
+    if (!circleGuideCtx || !state.circlePoints || state.circlePoints.length < 2) return;
+    const pts = state.circlePoints;
+    clearCircleGuide();
+
+    circleGuideCtx.save();
+    // Modern smartphone AI neon style: glowing cyan outline
+    circleGuideCtx.lineCap = 'round';
+    circleGuideCtx.lineJoin = 'round';
+    circleGuideCtx.lineWidth = 3.5;
+    circleGuideCtx.strokeStyle = '#06b6d4';
+    circleGuideCtx.shadowColor = 'rgba(6, 182, 212, 0.85)';
+    circleGuideCtx.shadowBlur = 10;
+
+    circleGuideCtx.beginPath();
+    circleGuideCtx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      circleGuideCtx.lineTo(pts[i].x, pts[i].y);
+    }
+    circleGuideCtx.stroke();
+
+    // Subtle dashed closing line preview from current pointer to starting origin
+    if (pts.length > 5) {
+      circleGuideCtx.save();
+      circleGuideCtx.lineWidth = 1.8;
+      circleGuideCtx.setLineDash([4, 4]);
+      circleGuideCtx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+      circleGuideCtx.shadowBlur = 0;
+      circleGuideCtx.beginPath();
+      circleGuideCtx.moveTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+      circleGuideCtx.lineTo(pts[0].x, pts[0].y);
+      circleGuideCtx.stroke();
+      circleGuideCtx.restore();
+    }
+
+    circleGuideCtx.restore();
+  }
+
+  async function processSmartCircleSelection(points) {
+    if (!points || points.length < 4 || !state.currentImage || !maskCtx) {
+      clearCircleGuide();
+      return;
+    }
+
+    // Save history before applying new mask
+    saveUndoState();
+
+    // Animate temporary glowing fill inside the user's circle
+    if (circleGuideCtx) {
+      circleGuideCtx.save();
+      circleGuideCtx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+      circleGuideCtx.beginPath();
+      circleGuideCtx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        circleGuideCtx.lineTo(points[i].x, points[i].y);
+      }
+      circleGuideCtx.closePath();
+      circleGuideCtx.fill();
+      circleGuideCtx.restore();
+    }
+
+    let appliedViaAI = false;
+
+    try {
+      // 1. Export base image to PNG blob
+      const imageBlob = await new Promise((resolve) => {
+        els.imageCanvas.toBlob(resolve, 'image/png');
+      });
+
+      // 2. Dispatch to backend AI GrabCut Smart Segmentation endpoint
+      const formData = new FormData();
+      formData.append('image', imageBlob, 'image.png');
+      formData.append('points', JSON.stringify(points));
+      formData.append('mode', 'smart_object');
+
+      const response = await fetch(`${API_BASE}/api/smart-circle-segment`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const maskBlob = await response.blob();
+        const maskImg = new Image();
+        await new Promise((resolve, reject) => {
+          maskImg.onload = resolve;
+          maskImg.onerror = reject;
+          maskImg.src = URL.createObjectURL(maskBlob);
+        });
+
+        // Create temporary canvas to tint binary mask to signature studio red/pink mask color
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = state.imageWidth;
+        tempCanvas.height = state.imageHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(maskImg, 0, 0);
+
+        // Tint foreground pixels to signature studio mask color: rgba(239, 68, 68, 0.45)
+        tempCtx.globalCompositeOperation = 'source-in';
+        tempCtx.fillStyle = 'rgba(239, 68, 68, 0.45)';
+        tempCtx.fillRect(0, 0, state.imageWidth, state.imageHeight);
+
+        // Composite onto maskCanvas
+        maskCtx.globalCompositeOperation = 'source-over';
+        maskCtx.drawImage(tempCanvas, 0, 0);
+
+        appliedViaAI = true;
+      }
+    } catch (err) {
+      console.warn('Backend smart circle segmentation fell back to client polygon fill:', err);
+    }
+
+    // Client-side fallback if backend failed or offline
+    if (!appliedViaAI) {
+      maskCtx.save();
+      maskCtx.globalCompositeOperation = 'source-over';
+      maskCtx.fillStyle = 'rgba(239, 68, 68, 0.45)';
+      maskCtx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+      maskCtx.lineWidth = 4;
+      maskCtx.lineJoin = 'round';
+
+      maskCtx.beginPath();
+      maskCtx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        maskCtx.lineTo(points[i].x, points[i].y);
+      }
+      maskCtx.closePath();
+      maskCtx.fill();
+      maskCtx.stroke();
+      maskCtx.restore();
+    }
+
+    // Play subtle haptic visual pulse animation on maskCanvas
+    if (els.maskCanvas) {
+      els.maskCanvas.classList.remove('mask-smart-pulsing');
+      void els.maskCanvas.offsetWidth; // trigger reflow
+      els.maskCanvas.classList.add('mask-smart-pulsing');
+      setTimeout(() => {
+        if (els.maskCanvas) els.maskCanvas.classList.remove('mask-smart-pulsing');
+      }, 1000);
+    }
+
+    state.hasMaskSelection = true;
+    clearCircleGuide();
+    updateUIState();
+    showToast('AI Smart Circle: Object selected! Click "Remove Object" or brush to refine.', 'success');
   }
 
   function configureMaskContext() {
@@ -1235,6 +1459,8 @@
     // Tool shortcuts
     else if (e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey) {
       setTool('brush');
+    } else if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) {
+      setTool('circle');
     } else if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.metaKey) {
       setTool('eraser');
     }

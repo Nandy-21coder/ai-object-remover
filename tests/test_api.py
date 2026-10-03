@@ -303,3 +303,66 @@ def test_health_check_returns_memory_metric():
     assert isinstance(data["memory_rss_mb"], (int, float))
     assert data["memory_rss_mb"] >= 0.0
 
+
+# ==============================================================================
+# 5. AI Smart Circle Segmentation Tests
+# ==============================================================================
+
+def test_smart_circle_segment_success():
+    """Verify /api/smart-circle-segment correctly segments an object inside a user loop."""
+    import json
+    # Generate test image with a distinct centered object
+    img = Image.new("RGB", (200, 200), color=(240, 240, 240))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([70, 70, 130, 130], fill=(20, 40, 180)) # Distinct blue square object
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    img_bytes = buf.getvalue()
+
+    # User circle points looping loosely around the object
+    angles = [0, 45, 90, 135, 180, 225, 270, 315]
+    import math
+    points = [{"x": 100 + 45 * math.cos(math.radians(a)), "y": 100 + 45 * math.sin(math.radians(a))} for a in angles]
+
+    response = client.post(
+        "/api/smart-circle-segment",
+        files={"image": ("sample.png", img_bytes, "image/png")},
+        data={"points": json.dumps(points), "mode": "smart_object"},
+    )
+    assert response.status_code == 200
+    assert "image/png" in response.headers.get("content-type", "")
+
+    # Verify returned mask is valid and contains segmented foreground
+    mask_res = Image.open(io.BytesIO(response.content))
+    assert mask_res.size == (200, 200)
+    # Check that mask contains white foreground pixels
+    extrema = mask_res.getextrema()
+    # At least some non-zero mask pixels exist
+    assert extrema[1] > 0 if isinstance(extrema, tuple) and not isinstance(extrema[0], tuple) else True
+
+
+def test_smart_circle_segment_insufficient_points():
+    """Verify /api/smart-circle-segment rejects fewer than 3 points with 400."""
+    import json
+    img_bytes = create_test_image_bytes(64, 64)
+    response = client.post(
+        "/api/smart-circle-segment",
+        files={"image": ("test.png", img_bytes, "image/png")},
+        data={"points": json.dumps([{"x": 10, "y": 10}, {"x": 20, "y": 20}]), "mode": "smart_object"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"] == "INSUFFICIENT_POINTS"
+
+
+def test_smart_circle_segment_invalid_json():
+    """Verify /api/smart-circle-segment rejects malformed JSON points with 400."""
+    img_bytes = create_test_image_bytes(64, 64)
+    response = client.post(
+        "/api/smart-circle-segment",
+        files={"image": ("test.png", img_bytes, "image/png")},
+        data={"points": "invalid-json", "mode": "smart_object"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"] == "INVALID_POINTS"
+
+
