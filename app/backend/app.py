@@ -130,6 +130,13 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=[
+        "X-Process-Time-Ms",
+        "X-Inference-Time-Ms",
+        "X-Memory-Rss-Mb",
+        "X-Memory-Delta-Mb",
+        "Server-Timing",
+    ],
 )
 
 

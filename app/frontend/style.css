@@ -539,14 +539,15 @@ a {
 /* Workspace Layout: Canvas Stage (Left/Center) + Tools (Right) */
 .workspace-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 340px;
   gap: 0;
   background: #ffffff;
   border: 1px solid var(--border-default);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  min-height: 560px;
+  height: 640px;
+  min-height: 540px;
 }
 
 /* Canvas Viewport */
@@ -564,7 +565,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 540px;
+  height: 100%;
+  width: 100%;
   cursor: crosshair;
   user-select: none;
 }
@@ -584,6 +586,9 @@ a {
   border-radius: 4px;
   overflow: hidden;
   background: #ffffff;
+  flex-shrink: 0;
+  line-height: 0;
+  user-select: none;
 }
 
 .canvas-layer {
@@ -777,6 +782,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .panel-header {

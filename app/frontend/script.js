@@ -390,6 +390,8 @@
     state.undoStack = [];
     state.redoStack = [];
     state.hasMaskSelection = false;
+    state.panX = 0;
+    state.panY = 0;
 
     // Update Header info
     if (els.imageFilename) els.imageFilename.textContent = filename;
@@ -400,9 +402,11 @@
     // Configure Canvas Dimensions
     setupCanvasLayers();
 
-    // In-Place Smooth Transition: Hide Upload Section, Reveal Editor Section
-    els.uploadSection.style.display = 'none';
-    els.editorSection.style.display = 'block';
+    // In-Place Smooth Transition: Hide Hero & Upload Section so Editor is immediately visible at the top!
+    const heroSec = document.getElementById('hero');
+    if (heroSec) heroSec.style.display = 'none';
+    if (els.uploadSection) els.uploadSection.style.display = 'none';
+    if (els.editorSection) els.editorSection.style.display = 'block';
 
     // Hide any previous result controls & split slider
     if (els.resultControls) els.resultControls.style.display = 'none';
@@ -412,10 +416,12 @@
     // Default tool
     setTool('brush');
 
-    // Calculate Best Fit Zoom & Center Viewport
-    zoomFit();
-    saveUndoState();
-    updateUIState();
+    // Calculate Best Fit Zoom & Center Viewport after DOM reflow
+    requestAnimationFrame(() => {
+      zoomFit();
+      saveUndoState();
+      updateUIState();
+    });
   }
 
   function setupCanvasLayers() {
@@ -705,10 +711,8 @@
 
   function zoomFit() {
     if (!state.imageWidth || !state.imageHeight || !els.canvasViewport) return;
-    const viewW = els.canvasViewport.clientWidth - 48;
-    const viewH = els.canvasViewport.clientHeight - 48;
-
-    if (viewW <= 0 || viewH <= 0) return;
+    const viewW = Math.max(200, els.canvasViewport.clientWidth - 48);
+    const viewH = Math.max(200, els.canvasViewport.clientHeight - 48);
 
     const scaleX = viewW / state.imageWidth;
     const scaleY = viewH / state.imageHeight;
@@ -738,6 +742,14 @@
   function applyTransform(smooth = false) {
     if (!els.canvasContainer) return;
 
+    // Constrain pan within reasonable boundaries so image can never be lost
+    if (els.canvasViewport && state.imageWidth) {
+      const maxPanX = Math.max(200, (state.imageWidth * state.zoom) / 2 + els.canvasViewport.clientWidth / 2);
+      const maxPanY = Math.max(200, (state.imageHeight * state.zoom) / 2 + els.canvasViewport.clientHeight / 2);
+      state.panX = Math.max(-maxPanX, Math.min(maxPanX, state.panX));
+      state.panY = Math.max(-maxPanY, Math.min(maxPanY, state.panY));
+    }
+
     if (smooth) {
       els.canvasContainer.style.transition = 'transform 0.14s cubic-bezier(0.2, 0, 0, 1)';
       setTimeout(() => {
@@ -751,25 +763,23 @@
   }
 
   function handleCanvasWheel(e) {
-    e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
       // Zoom centered on pointer
       const rect = els.canvasViewport.getBoundingClientRect();
       const pointerX = e.clientX - rect.left - rect.width / 2;
       const pointerY = e.clientY - rect.top - rect.height / 2;
 
       const oldZoom = state.zoom;
-      const zoomDelta = e.deltaY < 0 ? 1.12 : 0.89;
+      const zoomDelta = e.deltaY < 0 ? 1.15 : 0.87;
       const newZoom = Math.max(0.1, Math.min(8.0, oldZoom * zoomDelta));
 
       state.panX -= (pointerX - state.panX) * (newZoom / oldZoom - 1);
       state.panY -= (pointerY - state.panY) * (newZoom / oldZoom - 1);
       setZoom(newZoom, false);
-    } else {
-      state.panX -= e.deltaX;
-      state.panY -= e.deltaY;
-      applyTransform(false);
     }
+    // Note: When no modifier key is held, normal mouse scroll is not intercepted.
+    // This allows natural scrolling without flinging the canvas away.
   }
 
   /* ==========================================================================
