@@ -1,0 +1,5 @@
+test_id,image_name,width,height,model,latency_seconds,rss_before_mb,rss_after_mb,rss_delta_mb,peak_ram_mb,peak_gpu_memory_mb,status
+BENCH-001,synthetic_256x256_run1,256,256,lama-lama,12.5652,593.56,593.56,0.00,593.56,N/A,SUCCESS
+BENCH-002,synthetic_512x512_run1,512,512,lama-lama,3.2963,761.65,761.65,0.00,761.65,N/A,SUCCESS
+BENCH-003,synthetic_256x256_run1,256,256,lama-lama,41.3636,86.59,562.57,475.98,562.57,N/A,SUCCESS
+BENCH-004,synthetic_512x512_run1,512,512,lama-lama,21.1659,563.57,730.66,167.09,730.66,N/A,SUCCESS
