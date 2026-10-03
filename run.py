@@ -179,6 +179,8 @@ def launch_application(
         return 1
 
     def stream_reader():
+        if proc.stdout is None:
+            return
         try:
             for line in iter(proc.stdout.readline, ""):
                 with log_lock:
@@ -198,6 +200,7 @@ def launch_application(
     start_time = time.time()
     backend_ready = False
     model_ready = False
+    health_payload: Optional[Dict[str, Any]] = None
 
     while time.time() - start_time < max_wait_seconds:
         # Check if process terminated prematurely
@@ -216,6 +219,7 @@ def launch_application(
         is_our, data = probe_health_endpoint(host, port, timeout=1.0)
         if is_our and data:
             backend_ready = True
+            health_payload = data
             if data.get("model") == "ready":
                 model_ready = True
                 break
@@ -228,7 +232,8 @@ def launch_application(
         return 1
 
     if not model_ready:
-        print(f"[Launcher Warning] Backend is online, but model report is: {data.get('model_state', 'loading')}")
+        model_state = health_payload.get("model_state", "loading") if health_payload else "loading"
+        print(f"[Launcher Warning] Backend is online, but model report is: {model_state}")
     else:
         print(f"[Launcher] Backend is online: http://{host}:{port}")
         print(f"[Launcher] LaMa ONNX Inpainting Model: READY (Loaded in memory)")
