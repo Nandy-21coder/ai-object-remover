@@ -187,10 +187,12 @@ async def evaluate_natural_reference_pair(
             "status": "FAILED: Missing test files",
         }
 
+    resolution_str = "N/A"
     try:
         ref_img = Image.open(reference_path).convert("RGB")
         damaged_img = Image.open(damaged_path).convert("RGB")
         mask_img = Image.open(mask_path).convert("L")
+        resolution_str = f"{ref_img.width}x{ref_img.height}"
 
         result_bytes = await service.inpaint(damaged_img, mask_img, prompt="seamless natural restoration")
         rec_img = Image.open(io.BytesIO(result_bytes)).convert("RGB")
@@ -211,7 +213,7 @@ async def evaluate_natural_reference_pair(
         "image_name": image_name,
         "psnr": psnr_val if status == "SUCCESS" else "N/A",
         "ssim": ssim_val if status == "SUCCESS" else "N/A",
-        "resolution": f"{ref_img.width}x{ref_img.height}" if status == "SUCCESS" else "N/A",
+        "resolution": resolution_str if status == "SUCCESS" else "N/A",
         "model": model_name,
         "status": status,
     }
