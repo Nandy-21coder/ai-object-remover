@@ -1074,7 +1074,7 @@
   }
 
   /* ==========================================================================
-     11. SHOWCASE BEFORE/AFTER COMPARISON SLIDERS (ALL 4 CARDS)
+     11. SHOWCASE BEFORE/AFTER COMPARISON SLIDERS (ALL 6 CARDS)
      ========================================================================== */
   function initShowcaseSlider() {
     const containers = document.querySelectorAll('.showcase-slider-container');
