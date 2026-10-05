@@ -1,15 +1,29 @@
-# Byte-compiled / Python caches
+# Core exclusions
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+
+.venv/
+venv/
+env/
+ENV/
+
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.so
 *.pyd
 
-# Virtual Environments
-env/
-venv/
-ENV/
-.venv/
+.pytest_cache/
+.vscode/
+*.log
+test_lama_out.png
+test_*_out.png
+*.out.png
 
 # Environment Variables & Secrets
 .env

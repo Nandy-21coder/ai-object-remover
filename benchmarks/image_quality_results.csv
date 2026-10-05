@@ -1,6 +1,0 @@
-test_id,evaluation_type,image_name,psnr,ssim,resolution,model,status
-QUAL-001,Synthetic Ground Truth,synthetic_horizon_512,53.695,0.9993,512x512,lama-lama,SUCCESS
-QUAL-002,Synthetic Ground Truth,synthetic_backdrop_256,54.886,0.9997,256x256,lama-lama,SUCCESS
-QUAL-003,Synthetic Ground Truth,synthetic_horizon_512,53.695,0.9993,512x512,lama-lama,SUCCESS
-QUAL-004,Synthetic Ground Truth,synthetic_backdrop_256,54.886,0.9997,256x256,lama-lama,SUCCESS
-QUAL-NAT-005,Natural Reference Evaluation,natural_photo_benchmark,PENDING,PENDING,PENDING,lama-lama,PENDING_NATURAL_REFERENCE_DATASET

@@ -240,42 +240,21 @@ python benchmarks/image_quality.py
 ```
 ai-object-remover/
 │
-├── app/
-│   ├── backend/
-│   │   ├── app.py                     # FastAPI backend (timing, memory headers, routes)
-│   │   └── inpainting.py              # Inpainting pipeline, LaMa ONNX provider, compositing
-│   │
-│   └── frontend/
-│       ├── index.html                 # HTML5 canvas photo studio with metrics display
-│       ├── script.js                  # Frontend engine, client latency profiling & drawing
-│       └── style.css                  # Studio design system & styling
-│
-├── models/
-│   └── inpainting_lama.onnx           # Offline LaMa neural net model (88.3MB)
-│
-├── tests/
-│   ├── test_api.py                    # Pytest API validation & metric headers suite (13 tests)
-│   ├── test_inpainting.py             # Pytest inpainting & compositing suite (9 tests)
-│   └── README.md                      # Test documentation & execution evidence
-│
-├── benchmarks/
-│   ├── benchmark.py                   # Latency & memory delta profiling
-│   ├── image_quality.py               # PSNR & SSIM ground-truth evaluation
-│   ├── results.csv                    # Empirical latency & RSS records
-│   ├── image_quality_results.csv      # Empirical PSNR/SSIM quality records
-│   └── README.md                      # Benchmarking methodology & schema documentation
-│
-├── docs/
-│   ├── API.md                         # REST API specification & metric headers
-│   ├── USER_TESTING.md                # Usability framework & empirical session ledger
-│   ├── PROJECT_AUDIT.md               # Empirical system audit report
-│   └── PROJECT_CLEANUP_PLAN.md        # File classification & cleanup plan
-│
-├── .env                               # Active local environment config
-├── .env.example                       # Clean configuration template
-├── .gitignore                         # Git exclusion rules
-├── README.md                          # Project documentation
-└── requirements.txt                   # Pinned dependencies
+├── index.html                 # HTML5 canvas photo studio workspace
+├── style.css                  # Studio design system & styling
+├── script.js                  # Frontend engine, canvas drawing & inpainting API controller
+├── auth.js                    # Supabase authentication & local fallback manager
+├── app.py                     # FastAPI backend (timing, memory headers, routes)
+├── inpainting.py              # Inpainting pipeline, Smart Circle segmentation & LaMa ONNX provider
+├── inpainting_lama.onnx       # Offline LaMa neural net model (88.3MB)
+├── showcase_*.jpg             # High-res showcase before/after photography assets
+├── .env                       # Active local environment configuration
+├── .env.example               # Clean configuration template
+├── requirements.txt           # Pinned runtime dependencies
+├── run.py                     # Intelligent lifecycle launcher
+├── run.bat                    # One-click Windows batch runner
+├── README.md                  # Project documentation
+└── .gitignore                 # Git exclusion rules
 ```
 
 ---
@@ -289,9 +268,9 @@ ai-object-remover/
 ### Deployment Requirements for Production Hosting:
 - **Runtime Environment**: Python 3.10+ Linux/Windows container (e.g. Hugging Face Spaces Docker or Debian instance).
 - **System Memory**: Minimum 1.5 GB RAM (2.0 GB recommended) to support ONNX Runtime session buffers and 512x512 image tensor processing.
-- **Model Storage**: 90 MB persistent or container storage for `models/inpainting_lama.onnx`.
+- **Model Storage**: 90 MB persistent or container storage for `inpainting_lama.onnx`.
 - **Port Exposure**: Standard HTTP port (e.g. 8000 or 7860 for Hugging Face Spaces).
-- **Concurrency**: Recommended `uvicorn app.backend.app:app --workers 1` with existing `asyncio.Semaphore(2)` CPU-guard.
+- **Concurrency**: Recommended `uvicorn app:app --workers 1` with existing `asyncio.Semaphore(2)` CPU-guard.
 
 ### How to Run Locally (Automated One-Click Startup)
 

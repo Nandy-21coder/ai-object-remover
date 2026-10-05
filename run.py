@@ -35,8 +35,6 @@ except ImportError:
     pass
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-BACKEND_DIR = PROJECT_ROOT / "app" / "backend"
-MODELS_DIR = PROJECT_ROOT / "models"
 
 
 def find_python_interpreter() -> str:
@@ -154,7 +152,7 @@ def launch_application(
         python_bin,
         "-m",
         "uvicorn",
-        "app.backend.app:app",
+        "app:app",
         "--host",
         host,
         "--port",

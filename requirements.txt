@@ -16,7 +16,5 @@ replicate>=1.0.0
 # Local Offline AI Inpainting (LaMa ONNX)
 onnxruntime>=1.16.0
 
-# Testing & Benchmarking
-pytest>=7.4.0
-scikit-image>=0.22.0
+# Process Monitoring
 psutil>=5.9.0
