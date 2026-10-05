@@ -862,23 +862,43 @@
           maskImg.src = URL.createObjectURL(maskBlob);
         });
 
-        // Create temporary canvas to tint binary mask to signature studio red/pink mask color
+        // Create temporary canvas to inspect and tint the returned segmented mask
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = state.imageWidth;
         tempCanvas.height = state.imageHeight;
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(maskImg, 0, 0);
 
-        // Tint foreground pixels to signature studio mask color: rgba(239, 68, 68, 0.45)
-        tempCtx.globalCompositeOperation = 'source-in';
-        tempCtx.fillStyle = 'rgba(239, 68, 68, 0.45)';
-        tempCtx.fillRect(0, 0, state.imageWidth, state.imageHeight);
+        // Inspect pixel data: strictly tint only true foreground pixels to signature studio red
+        // and ensure all unselected pixels remain 100% transparent.
+        const imgData = tempCtx.getImageData(0, 0, state.imageWidth, state.imageHeight);
+        const d = imgData.data;
+        let selectedCount = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          // A pixel is foreground if luminance is bright OR alpha is active
+          const isFg = (d[i] > 100 || d[i + 1] > 100 || d[i + 2] > 100) && (d[i + 3] > 80);
+          if (isFg) {
+            d[i] = 239;     // R
+            d[i + 1] = 68;  // G
+            d[i + 2] = 68;  // B
+            d[i + 3] = 115; // Signature red mask alpha ~0.45 (115/255)
+            selectedCount++;
+          } else {
+            d[i] = 0;
+            d[i + 1] = 0;
+            d[i + 2] = 0;
+            d[i + 3] = 0;   // Guaranteed 100% transparent background
+          }
+        }
+        tempCtx.putImageData(imgData, 0, 0);
 
-        // Composite onto maskCanvas
-        maskCtx.globalCompositeOperation = 'source-over';
-        maskCtx.drawImage(tempCanvas, 0, 0);
-
-        appliedViaAI = true;
+        // Validate that segmentation is non-empty and does not cover the whole photo
+        const totalPixels = state.imageWidth * state.imageHeight;
+        if (selectedCount > 0 && selectedCount < totalPixels * 0.9) {
+          maskCtx.globalCompositeOperation = 'source-over';
+          maskCtx.drawImage(tempCanvas, 0, 0);
+          appliedViaAI = true;
+        }
       }
     } catch (err) {
       console.warn('Backend smart circle segmentation fell back to client polygon fill:', err);
@@ -1282,7 +1302,7 @@
 
       for (let i = 0; i < maskData.data.length; i += 4) {
         const alpha = maskData.data[i + 3];
-        const val = alpha > 5 ? 255 : 0;
+        const val = alpha > 25 ? 255 : 0;
         binaryData.data[i] = val;
         binaryData.data[i + 1] = val;
         binaryData.data[i + 2] = val;

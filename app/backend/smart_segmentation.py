@@ -50,14 +50,14 @@ class SmartSegmentationService:
         # 2. Convert points to integer numpy polygon and clamp to image dimensions
         pts = []
         for p in points:
-            px = max(0, min(w - 1, int(round(p.get("x", 0)))))
-            py = max(0, min(h - 1, int(round(p.get("y", 0)))))
+            px = max(0, min(w - 1, round(p.get("x", 0))))
+            py = max(0, min(h - 1, round(p.get("y", 0))))
             pts.append([px, py])
         poly_pts = np.array(pts, dtype=np.int32)
 
         # 3. Create full-size polygon binary mask
         poly_mask = np.zeros((h, w), dtype=np.uint8)
-        cv2.fillPoly(poly_mask, [poly_pts], 255)
+        cv2.fillPoly(poly_mask, [poly_pts], (255,))
         poly_area = cv2.countNonZero(poly_mask)
 
         # Direct fill fallback if requested or if polygon is tiny (< 100 pixels)
@@ -91,7 +91,7 @@ class SmartSegmentationService:
             cy = int(moments["m01"] / moments["m00"])
             core_radius = max(3, int(min(bw, bh) * 0.18))
             core_mask = np.zeros((h, w), dtype=np.uint8)
-            cv2.circle(core_mask, (cx, cy), core_radius, 255, -1)
+            cv2.circle(core_mask, (cx, cy), core_radius, (255,), -1)
             # Only set core where inside the polygon
             grabcut_mask[(core_mask == 255) & (poly_mask == 255)] = cv2.GC_FGD
 
@@ -142,8 +142,17 @@ class SmartSegmentationService:
 
     @staticmethod
     def _encode_mask_png(mask: np.ndarray) -> bytes:
-        """Encodes an 8-bit single channel mask to PNG bytes."""
-        success, encoded = cv2.imencode(".png", mask)
+        """
+        Encodes an 8-bit binary mask as a 4-channel BGRA PNG with full alpha transparency.
+        Foreground (object to remove): White (255, 255, 255) with Alpha 255.
+        Background (unselected context): Completely transparent (0, 0, 0, 0).
+        """
+        h, w = mask.shape[:2]
+        bgra = np.zeros((h, w, 4), dtype=np.uint8)
+        fg_indices = mask > 127
+        bgra[fg_indices] = [255, 255, 255, 255]
+        success, encoded = cv2.imencode(".png", bgra)
         if not success:
             raise RuntimeError("Failed to encode binary mask to PNG format.")
         return encoded.tobytes()
+

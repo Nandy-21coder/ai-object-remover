@@ -173,6 +173,13 @@ class MaskService:
                 "The selection mask is empty. Please brush over the object or text you want to remove."
             )
 
+        metrics = cls.get_mask_metrics(binary_mask)
+        if metrics.get("coverage_percentage", 0) > 95.0:
+            raise MaskValidationError(
+                f"The selection mask covers {metrics['coverage_percentage']}% of the photo. "
+                "Please select only the specific object or region you want to remove."
+            )
+
         return binary_mask
 
     @classmethod

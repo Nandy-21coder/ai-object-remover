@@ -22,6 +22,11 @@ ENV/
 # Large AI Model Weights (Offline LaMa ONNX model)
 *.onnx
 
+# Temporary Test Output Artifacts
+test_*_out.png
+*.out.png
+
+
 # Unit Tests & Coverage
 .pytest_cache/
 .coverage

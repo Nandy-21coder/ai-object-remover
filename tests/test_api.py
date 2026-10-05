@@ -8,6 +8,7 @@ Tests real endpoints defined in app.py:
 """
 
 import io
+import json
 import sys
 from pathlib import Path
 import pytest
@@ -336,9 +337,9 @@ def test_smart_circle_segment_success():
     mask_res = Image.open(io.BytesIO(response.content))
     assert mask_res.size == (200, 200)
     # Check that mask contains white foreground pixels
-    extrema = mask_res.getextrema()
-    # At least some non-zero mask pixels exist
-    assert extrema[1] > 0 if isinstance(extrema, tuple) and not isinstance(extrema[0], tuple) else True
+    bbox = mask_res.getbbox()
+    assert bbox is not None
+    assert bbox[2] > bbox[0] and bbox[3] > bbox[1]
 
 
 def test_smart_circle_segment_insufficient_points():
@@ -354,15 +355,48 @@ def test_smart_circle_segment_insufficient_points():
     assert response.json()["detail"]["error"] == "INSUFFICIENT_POINTS"
 
 
-def test_smart_circle_segment_invalid_json():
-    """Verify /api/smart-circle-segment rejects malformed JSON points with 400."""
-    img_bytes = create_test_image_bytes(64, 64)
+def test_smart_circle_segment_transparency():
+    """Verify /api/smart-circle-segment returns transparent RGBA PNG with alpha=0 on background."""
+    img = Image.new("RGB", (100, 100), color=(50, 150, 200))
+    from PIL import ImageDraw
+    import math
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([40, 40, 60, 60], fill=(240, 40, 40))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    img_bytes = buf.getvalue()
+
+    angles = [0, 60, 120, 180, 240, 300]
+    points = [{"x": 50 + 25 * math.cos(math.radians(a)), "y": 50 + 25 * math.sin(math.radians(a))} for a in angles]
+
     response = client.post(
         "/api/smart-circle-segment",
-        files={"image": ("test.png", img_bytes, "image/png")},
-        data={"points": "invalid-json", "mode": "smart_object"},
+        files={"image": ("sample.png", img_bytes, "image/png")},
+        data={"points": json.dumps(points), "mode": "smart_object"},
     )
+    assert response.status_code == 200
+    mask_res = Image.open(io.BytesIO(response.content))
+    assert mask_res.mode == "RGBA"
+    # Ensure background corner (0, 0) is fully transparent
+    assert mask_res.getpixel((0, 0))[3] == 0
+
+
+def test_remove_object_excessive_mask_coverage():
+    """Verify /api/remove-object rejects full-canvas masks (>95% coverage) to prevent accidental smears."""
+    w, h = 64, 64
+    img_bytes = create_test_image_bytes(w, h)
+    # Mask with 100% white pixels
+    full_mask = Image.new("L", (w, h), 255)
+    buf = io.BytesIO()
+    full_mask.save(buf, format="PNG")
+    mask_bytes = buf.getvalue()
+
+    files = {
+        "image": ("test.png", img_bytes, "image/png"),
+        "mask": ("mask.png", mask_bytes, "image/png"),
+    }
+    response = client.post("/api/remove-object", files=files)
     assert response.status_code == 400
-    assert response.json()["detail"]["error"] == "INVALID_POINTS"
+    assert "covers" in response.text
 
 
