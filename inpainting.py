@@ -95,10 +95,33 @@ class ProviderTimeoutError(InpaintingAPIError):
 # ==============================================================================
 
 class MaskService:
+    """
+    Core image and binary mask preprocessing, normalization, and compositing service.
+    
+    Handles:
+    - Decoding raw bytes into validated PIL Images.
+    - Correcting camera orientation via EXIF transposition.
+    - Standardizing multi-channel masks to strict 1-channel binary masks (0 or 255).
+    - Resolution-aware adaptive dilation and Gaussian feathering.
+    - Bit-exact compositing of generated inpainting over unmasked original pixels.
+    """
     SUPPORTED_FORMATS = {"JPEG", "JPG", "PNG", "WEBP"}
 
     @classmethod
     def load_image(cls, image_bytes: bytes) -> Image.Image:
+        """
+        Decodes raw byte stream into a validated, orientation-corrected PIL Image.
+
+        Args:
+            image_bytes: Raw binary bytes of the uploaded image file.
+
+        Returns:
+            Image.Image: Decoded PIL Image in 'RGB' or 'RGBA' mode with correct EXIF orientation.
+
+        Raises:
+            MaskValidationError: If image_bytes is empty, corrupted, has an unsupported format
+                                 (only JPG, PNG, WebP supported), or invalid dimensions.
+        """
         if not image_bytes:
             raise MaskValidationError("No image data provided. Uploaded image is empty.")
         try:
@@ -113,6 +136,7 @@ class MaskService:
                 f"Unsupported image format: '{img_format}'. Supported formats: JPG, JPEG, PNG, WebP."
             )
 
+        # Apply camera EXIF rotation so image matches what user saw in browser
         try:
             transposed = ImageOps.exif_transpose(image)
             if transposed is not None:
@@ -120,6 +144,7 @@ class MaskService:
         except Exception:
             pass
 
+        # Normalize palette/grayscale images to standard 24-bit RGB
         if image.mode not in ("RGB", "RGBA"):
             image = image.convert("RGB")
 
@@ -130,6 +155,28 @@ class MaskService:
 
     @classmethod
     def load_and_binarize_mask(cls, mask_bytes: bytes, target_size: Tuple[int, int]) -> Image.Image:
+        """
+        Loads, resizes, and binarizes an uploaded selection mask into a strict 8-bit 'L' mode mask.
+
+        Preprocessing Steps:
+        1. Decodes mask bytes via Pillow.
+        2. Nearest-neighbor resizes mask to target_size if dimensions differ,
+           preserving sharp pixel boundaries without introducing intermediate blur.
+        3. Quantizes to strict binary: 255 for removal region, 0 for preserved background.
+           - For single-channel 'L' masks: threshold p > 50 -> 255.
+           - For RGBA masks: checks RGB luminance and alpha threshold (a > 30).
+        4. Validates that the selection is not empty (extrema != (0, 0)) and does not exceed 95% of total area.
+
+        Args:
+            mask_bytes: Raw binary bytes of the mask.
+            target_size: (width, height) tuple matching the source image dimensions.
+
+        Returns:
+            Image.Image: Strict binary PIL Image in 'L' mode (pixels are 0 or 255).
+
+        Raises:
+            MaskValidationError: If mask is empty, corrupted, covers 0 pixels, or covers >95% of the canvas.
+        """
         if not mask_bytes:
             raise MaskValidationError("No mask data provided. Uploaded mask is empty.")
         try:
@@ -142,9 +189,11 @@ class MaskService:
         if target_w <= 0 or target_h <= 0:
             raise MaskValidationError("Target image has invalid dimensions.")
 
+        # Ensure mask dimensions match base image exactly using nearest neighbor
         if raw_mask.size != (target_w, target_h):
             raw_mask = raw_mask.resize((target_w, target_h), resample=Image.Resampling.NEAREST)
 
+        # Strict binarization to eliminate anti-aliased gray borders
         if raw_mask.mode == "L":
             binary_mask = raw_mask.point(lambda p: 255 if p > 50 else 0, mode="L")
         else:
@@ -164,12 +213,14 @@ class MaskService:
             out[is_mask] = 255
             binary_mask = Image.fromarray(out, mode="L")
 
+        # Extrema check: reject if no pixels are white
         extrema = binary_mask.getextrema()
         if extrema == (0, 0) or extrema is None or extrema[1] == 0:
             raise MaskValidationError(
                 "The selection mask is empty. Please brush over the object or text you want to remove."
             )
 
+        # Rejection boundary: prevent user from accidentally selecting full image
         metrics = cls.get_mask_metrics(binary_mask)
         if metrics.get("coverage_percentage", 0) > 95.0:
             raise MaskValidationError(
@@ -181,7 +232,15 @@ class MaskService:
 
     @classmethod
     def get_mask_bounding_box(cls, mask: Image.Image) -> Optional[Tuple[int, int, int, int]]:
-        """Returns (min_x, min_y, max_x, max_y) of non-zero pixels, or None if empty."""
+        """
+        Calculates the minimal bounding box enclosing all non-zero mask pixels.
+
+        Args:
+            mask: Grayscale or binary PIL mask.
+
+        Returns:
+            Optional[Tuple[int, int, int, int]]: (min_x, min_y, max_x, max_y) or None if mask is empty.
+        """
         if mask.mode != "L":
             mask = mask.convert("L")
         return mask.getbbox()
@@ -193,7 +252,19 @@ class MaskService:
         base_expansion: int = 4,
         base_feather: float = 2.0,
     ) -> Tuple[int, float]:
-        """Calculates resolution-aware dilation and feathering parameters."""
+        """
+        Calculates resolution-aware dilation and feathering parameters.
+        Scales morphological kernel size linearly with image resolution relative to a 1024px baseline,
+        ensuring high-resolution photos (e.g. 4000px) receive adequate boundary coverage.
+
+        Args:
+            image_size: (width, height) of the image.
+            base_expansion: Baseline dilation in pixels for 1024px resolution (default: 4).
+            base_feather: Baseline Gaussian blur radius in pixels for 1024px resolution (default: 2.0).
+
+        Returns:
+            Tuple[int, float]: (adaptive_expansion_pixels, adaptive_feather_radius).
+        """
         orig_w, orig_h = image_size
         max_dim = max(orig_w, orig_h)
         res_factor = max_dim / 1024.0
@@ -203,6 +274,18 @@ class MaskService:
 
     @classmethod
     def expand_mask(cls, mask: Image.Image, expansion_pixels: int = 4) -> Image.Image:
+        """
+        Expands the mask boundary using a morphological MaxFilter (dilation).
+        Slight dilation guarantees that color halos and edge boundary transitions around
+        the unwanted object are fully covered and synthesized by the inpainting model.
+
+        Args:
+            mask: Binary PIL Image in 'L' mode.
+            expansion_pixels: Dilation radius in pixels.
+
+        Returns:
+            Image.Image: Morphologically dilated mask.
+        """
         if expansion_pixels <= 0:
             return mask.copy()
         filter_size = max(3, 2 * expansion_pixels + 1)
@@ -212,12 +295,33 @@ class MaskService:
 
     @classmethod
     def feather_mask(cls, mask: Image.Image, feather_radius: float = 2.0) -> Image.Image:
+        """
+        Softens binary mask edges using Gaussian blur feathering.
+        Provides smooth anti-aliased transitions during alpha compositing.
+
+        Args:
+            mask: Binary or dilated PIL Image in 'L' mode.
+            feather_radius: Standard deviation radius for Gaussian blur.
+
+        Returns:
+            Image.Image: Feathered mask.
+        """
         if feather_radius <= 0:
             return mask.copy()
         return mask.filter(ImageFilter.GaussianBlur(radius=float(feather_radius)))
 
     @classmethod
     def get_mask_metrics(cls, mask: Image.Image) -> Dict[str, Any]:
+        """
+        Computes spatial metrics and coverage statistics for a binary mask.
+
+        Args:
+            mask: Binary PIL Image in 'L' mode.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing 'width', 'height', 'total_pixels',
+                            'selected_pixels', and 'coverage_percentage'.
+        """
         w, h = mask.size
         total = w * h
         histogram = mask.histogram()
@@ -238,6 +342,20 @@ class MaskService:
         inpainted_image: Image.Image,
         processed_mask: Image.Image,
     ) -> Image.Image:
+        """
+        Composites the AI-generated inpainting strictly into the masked region.
+        Guarantees bit-exact pixel preservation for unmasked portions of the original image:
+        output_pixel = inpainted_pixel if mask == 255 else original_pixel.
+        Preserves original RGBA transparency if the source image had an alpha channel.
+
+        Args:
+            original_image: The user's original unedited PIL Image.
+            inpainted_image: The AI-generated inpainting PIL Image.
+            processed_mask: The feathered/dilated selection mask used for alpha blending.
+
+        Returns:
+            Image.Image: Final composited PIL Image matching original mode and dimensions.
+        """
         orig_w, orig_h = original_image.size
 
         if inpainted_image.size != (orig_w, orig_h):
@@ -263,12 +381,33 @@ class MaskService:
     def validate_and_process(
         cls, image_bytes: bytes, mask_bytes: bytes
     ) -> Tuple[Image.Image, Image.Image]:
+        """
+        Integrated validation helper: loads both source image and mask,
+        normalizes dimensions, and returns validated PIL Images.
+
+        Args:
+            image_bytes: Raw bytes of user image.
+            mask_bytes: Raw bytes of user mask.
+
+        Returns:
+            Tuple[Image.Image, Image.Image]: Validated (image, binary_mask) tuple.
+        """
         image = cls.load_image(image_bytes)
         mask = cls.load_and_binarize_mask(mask_bytes, image.size)
         return image, mask
 
     @staticmethod
     def to_bytes(image: Image.Image, format: str = "PNG") -> bytes:
+        """
+        Encodes a PIL Image into a byte buffer of the specified format.
+
+        Args:
+            image: PIL Image instance.
+            format: Output image format ('PNG', 'JPEG', etc.).
+
+        Returns:
+            bytes: Encoded image file bytes.
+        """
         buf = io.BytesIO()
         image.save(buf, format=format)
         return buf.getvalue()
@@ -524,7 +663,17 @@ class HuggingFaceInpaintingProvider(BaseInpaintingProvider):
 
 
 class LamaInpaintingProvider(BaseInpaintingProvider):
-    """Local offline Deep Learning Inpainting Provider using LaMa ONNX model."""
+    """
+    Local offline Deep Learning Inpainting Provider using the LaMa ONNX model.
+    
+    Executes local neural inference via onnxruntime (or OpenCV DNN fallback)
+    without sending any user images over external networks.
+    Features:
+    - Thread-safe singleton session caching.
+    - CPU thread optimization tuned to system hardware concurrency.
+    - Aspect-ratio-preserving reflection padding to standard 512x512 neural tensor.
+    - Exact unpadding and bicubic upsampling back to original image dimensions.
+    """
     _session = None
     _net = None
     _lock = threading.Lock()
@@ -547,6 +696,25 @@ class LamaInpaintingProvider(BaseInpaintingProvider):
 
     @classmethod
     def get_inference_engine(cls, model_path: Path) -> Tuple[str, Any]:
+        """
+        Retrieves or initializes the cached singleton ONNX inference session.
+        Uses double-checked locking (_lock) to ensure thread-safe initialization.
+
+        Session Configurations:
+        - log_severity_level = 3 (Errors only, suppresses verbose C++ runtime logs).
+        - intra_op_num_threads = bounded between 2 and 6 depending on available CPU cores.
+        - execution_mode = ORT_SEQUENTIAL for predictable CPU cache locality.
+        - graph_optimization_level = ORT_ENABLE_ALL (constant folding, node fusions).
+
+        Args:
+            model_path: Filesystem path to 'inpainting_lama.onnx'.
+
+        Returns:
+            Tuple[str, Any]: ('ort', InferenceSession) or ('dnn', cv2.dnn.Net).
+
+        Raises:
+            InpaintingAPIError: If model file is missing, truncated (<10MB), or engines unavailable.
+        """
         if not model_path.exists() or model_path.stat().st_size < 10 * 1024 * 1024:
             raise InpaintingAPIError(
                 f"LaMa AI model not found at {model_path}. Please place 'inpainting_lama.onnx' in the project root."
@@ -581,6 +749,10 @@ class LamaInpaintingProvider(BaseInpaintingProvider):
         prompt: str = "",
         model: Optional[str] = None,
     ) -> bytes:
+        """
+        Asynchronously delegates synchronous CPU-bound ONNX inpainting to a worker thread.
+        Prevents blocking the FastAPI async event loop during intensive neural inference.
+        """
         return await asyncio.to_thread(self._process_lama_inpaint, image_bytes, mask_bytes)
 
     def _process_lama_inpaint(
@@ -588,6 +760,31 @@ class LamaInpaintingProvider(BaseInpaintingProvider):
         image_bytes: bytes,
         mask_bytes: bytes,
     ) -> bytes:
+        """
+        Executes end-to-end LaMa neural network inpainting on raw image and mask bytes.
+
+        Algorithm Pipeline:
+        1. Decode: Unpacks image (BGR) and mask (Grayscale) via OpenCV.
+        2. Dimension Alignment: Resizes mask to match image using INTER_NEAREST.
+        3. Aspect-Ratio Preservation:
+           - Computes scale factor to fit maximum dimension into target_len (512px).
+           - Resizes image with INTER_AREA (downscale) or INTER_CUBIC (upscale).
+           - Symmetric reflection padding (cv2.BORDER_REFLECT_101) pads the shorter dimension
+             to exactly 512x512 without stretching, distortion, or artificial borders.
+           - Mask is padded with constant 0.0 (unselected background).
+        4. Tensor Preparation:
+           - Image tensor: float32, normalized to [0.0, 1.0], transposed to NCHW (1, 3, 512, 512).
+           - Mask tensor: float32 binary (1.0 for remove, 0.0 for keep), shape (1, 1, 512, 512).
+        5. Forward Pass: Runs ONNX inference session inputs through LaMa deep architecture.
+        6. Post-processing:
+           - Transposes output from NCHW to HWC (512, 512, 3), clips to [0, 255] uint8.
+           - Strips the symmetric reflection padding to restore the exact original aspect ratio.
+           - Upsamples/downsamples the unpadded region back to the exact original pixel dimensions.
+        7. Encoding: Encodes synthesized result as PNG bytes.
+
+        Returns:
+            bytes: Binary PNG encoded image.
+        """
         if cv2 is None:
             raise InpaintingAPIError("opencv-python (cv2) is required for LaMa inpainting but is not installed.")
         try:
@@ -622,6 +819,7 @@ class LamaInpaintingProvider(BaseInpaintingProvider):
             pad_left = (target_len - new_w) // 2
             pad_right = target_len - new_w - pad_left
 
+            # Reflection padding preserves contextual boundary statistics for convolution layers
             if pad_top > 0 or pad_bottom > 0 or pad_left > 0 or pad_right > 0:
                 img_padded = cv2.copyMakeBorder(
                     img_scaled, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_REFLECT_101
@@ -659,7 +857,7 @@ class LamaInpaintingProvider(BaseInpaintingProvider):
             out = np.transpose(out, (1, 2, 0))
             out = np.clip(out, 0, 255).astype(np.uint8)
 
-            # Remove padding to restore original aspect ratio exactly
+            # Strip padding to restore original aspect ratio exactly
             if pad_top > 0 or pad_bottom > 0 or pad_left > 0 or pad_right > 0:
                 out_unpadded = out[pad_top : pad_top + new_h, pad_left : pad_left + new_w]
             else:

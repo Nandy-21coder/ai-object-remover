@@ -1,31 +1,29 @@
-# Core exclusions
-.env
-.env.*
-!.env.example
-*.env
-*.pem
-*.key
+# ==============================================================================
+# AI Object Remover — Project Git Ignore Rules
+# ==============================================================================
 
+# Python Virtual Environments
 .venv/
 venv/
 env/
 ENV/
 
+# Python Bytecode & Cache Artifacts
 __pycache__/
 *.py[cod]
 *.pyc
+*.pyo
+*.pyd
 *$py.class
 *.so
-*.pyd
 
+# Pytest & Test Execution Caches
 .pytest_cache/
-.vscode/
-*.log
-test_lama_out.png
-test_*_out.png
-*.out.png
+.coverage
+htmlcov/
+.hypothesis/
 
-# Environment Variables & Secrets
+# Environment Variables & Secrets (Never commit .env files)
 .env
 .env.*
 !.env.example
@@ -33,21 +31,27 @@ test_*_out.png
 *.pem
 *.key
 
-# Large AI Model Weights (Offline LaMa ONNX model)
-*.onnx
+# Temporary Files, Logs & Backups
+*.log
+*.tmp
+*.temp
+*~
+*.swp
+*.bak
+*.pid
 
-# Temporary Test Output Artifacts
+# Temporary Test Output Images
 test_*_out.png
 *.out.png
+test_lama_out.png
 
+# Generated Benchmarks & Results
+benchmarks/*.csv
+results.csv
+image_quality_results.csv
 
-# Unit Tests & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Logs & Debugging
-*.log
+# Large AI Model Weights (Offline LaMa ONNX model)
+*.onnx
 
 # IDE & Editor Settings
 .vscode/

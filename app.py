@@ -29,7 +29,13 @@ if not logger.handlers:
 
 
 def get_process_rss_mb() -> float:
-    """Safe process-level Resident Set Size (RSS) memory measurement using psutil."""
+    """
+    Safe process-level Resident Set Size (RSS) memory measurement using psutil.
+
+    Returns:
+        float: Current process physical memory consumption in Megabytes (MB),
+               rounded to 2 decimal places, or 0.0 if psutil is unavailable.
+    """
     if psutil is not None:
         try:
             return round(psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024), 2)
@@ -51,6 +57,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 # Load environment variables from .env
 def _load_env_file():
+    """
+    Locates and loads environment variables from candidate .env file locations.
+    Checks the project directory first, then the current working directory,
+    ensuring configurations such as AI_PROVIDER, PORT, and HOST are applied.
+    """
     candidates = [
         PROJECT_ROOT / ".env",
         Path.cwd() / ".env",
@@ -63,6 +74,12 @@ def _load_env_file():
 _load_env_file()
 
 def get_model_path() -> Path:
+    """
+    Resolves the filesystem path to the local offline LaMa ONNX model.
+
+    Returns:
+        Path: Candidate path where 'inpainting_lama.onnx' is located.
+    """
     candidates = [
         PROJECT_ROOT / "inpainting_lama.onnx",
         Path.cwd() / "inpainting_lama.onnx",
@@ -92,6 +109,12 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan manager handling application startup and shutdown hooks.
+    Spawns a background task during startup to pre-warm the active offline LaMa
+    ONNX inference engine. This loads model weights into RAM and initializes the
+    ONNX Runtime session ahead of time, eliminating first-request cold-start latency.
+    """
     # Background warm-up of active offline model if present
     async def _warmup():
         try:
@@ -134,6 +157,12 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_timing_and_metrics_middleware(request: Request, call_next):
+    """
+    HTTP middleware measuring total request roundtrip processing latency.
+    Injects custom instrumentation headers:
+    - `X-Process-Time-Ms`: Server execution duration in milliseconds.
+    - `Server-Timing`: W3C compliant performance metric for browser DevTools.
+    """
     start_time = time.perf_counter()
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
@@ -148,7 +177,26 @@ async def add_timing_and_metrics_middleware(request: Request, call_next):
 @app.get("/api/health")
 @app.get("/api/status")
 async def health_check():
-    """Health check endpoint returning active provider and model readiness status."""
+    """
+    System Health & Diagnostic Status Endpoint.
+
+    Checks:
+    1. Active inpainting provider configuration (LaMa local or cloud provider).
+    2. Model weights presence and file integrity (>10 MB check).
+    3. ONNX Runtime inference engine initialization status.
+    4. Current process Resident Set Size (RSS) memory consumption in MB.
+
+    Returns:
+        JSON object conforming to API contract:
+        {
+            "status": "ok" | "error",
+            "model": "ready" | "not_ready",
+            "model_state": "ready" | "missing" | "corrupted" | "load_error" | "not_configured",
+            "provider": "lama",
+            "app": "ai-object-remover",
+            "memory_rss_mb": float
+        }
+    """
     _load_env_file()
     service = InpaintingService()
     status_dict = service.get_status()
@@ -197,7 +245,11 @@ async def health_check():
 
 @app.get("/api/auth/config")
 async def get_auth_config():
-    """Returns public client auth configuration (Supabase URL and anon key)."""
+    """
+    Returns public client authentication credentials for Supabase JS SDK.
+    When unconfigured in .env, returns empty strings to instruct frontend
+    auth controller (auth.js) to activate client-side offline demo fallback.
+    """
     _load_env_file()
     return {
         "supabase_url": os.getenv("SUPABASE_URL", "").strip(),
@@ -207,13 +259,28 @@ async def get_auth_config():
 
 @app.post("/api/smart-circle-segment")
 async def smart_circle_segment(
-    image: UploadFile = File(..., description="Uploaded image file"),
+    image: UploadFile = File(..., description="Uploaded image file (JPG, PNG, WebP)"),
     points: str = Form(..., description="JSON array of {'x': int, 'y': int} polygon points"),
     mode: Optional[str] = Form(default="smart_object"),
 ):
     """
-    AI Smart Circle Selection Endpoint:
-    Segments the primary object encircled by the user's rough loop.
+    AI Smart Circle Selection Endpoint.
+
+    Extracts a precise foreground object mask from a rough freehand loop drawn by the user.
+    Pipeline:
+    1. Deserializes and validates the JSON polygon vertices (min 3 points required).
+    2. Validates the uploaded source image bytes.
+    3. Offloads GrabCut interactive foreground extraction to a worker thread via asyncio.to_thread,
+       combining Gaussian Mixture Models, centroid foreground seeds, and morphological closing.
+    4. Encodes and streams back an 8-bit binary PNG mask (255 = remove object, 0 = keep).
+
+    Args:
+        image: Multipart image upload.
+        points: Serialized JSON array of {x, y} coordinate dicts.
+        mode: Segmentation mode ('smart_object' for GrabCut or 'fill_interior' for direct polygon fill).
+
+    Returns:
+        Response: Streaming binary PNG image mask with media_type='image/png'.
     """
     import json
     try:
@@ -262,14 +329,28 @@ async def remove_object(
     prompt: Optional[str] = Form(default="seamless background fill, photorealistic, clean texture"),
 ):
     """
-    Removes unwanted objects from an image using a real AI inpainting provider.
-    1. Validates the uploaded image (format, content).
-    2. Validates the mask and checks that selection is not empty.
-    3. Ensures image and mask dimensions match.
-    4. Converts mask to strict binary representation (255 remove, 0 preserve).
-    5. Preserves original dimensions and aspect ratio without stretching or cropping.
-    6. Sends to real AI provider.
-    7. Returns the generated inpainted image to the frontend.
+    Core AI Inpainting & Object Removal Endpoint.
+
+    Executes a 7-stage non-destructive photo reconstruction pipeline:
+    1. Input Validation: Reads multipart files, checks emptiness, enforces 25MB file size limit.
+    2. Domain Normalization: Normalizes EXIF orientation, validates formats (JPG, PNG, WebP),
+       and validates binary mask coverage (rejects empty masks and selections >95%).
+    3. Concurrency Protection: Acquires asyncio.Semaphore(2) to limit concurrent heavy ONNX passes.
+    4. Neural Inpainting: Dispatches to the active AI provider (offline LaMa ONNX with reflection-padding).
+    5. Bit-Exact Compositing: Blends synthesized background strictly into the masked region,
+       leaving 100% of unselected source pixels bit-exact and original resolution intact.
+    6. Telemetry & Profiling: Computes process latency, inference duration, and RSS memory delta.
+    7. Streaming Response: Returns the reconstructed PNG directly with performance headers.
+
+    Headers Returned:
+        - X-Original-Width: Source image width in pixels.
+        - X-Original-Height: Source image height in pixels.
+        - X-Mask-Coverage: Selected area percentage of total image area.
+        - X-Process-Time-Ms: Total server-side execution time in milliseconds.
+        - X-Inference-Time-Ms: Neural network forward pass duration in milliseconds.
+        - X-Memory-Rss-Mb: Resident Set Size in MB at completion.
+        - X-Memory-Delta-Mb: Memory consumed during this request.
+        - Server-Timing: W3C compliant performance metric.
     """
     req_start_perf = time.perf_counter()
     request_id = str(uuid.uuid4())[:8]
@@ -448,6 +529,7 @@ async def remove_object(
 # ------------------------------------------------------------------------------
 @app.get("/")
 async def serve_index():
+    """Serves the primary Single-Page Application (SPA) HTML canvas interface."""
     index_file = PROJECT_ROOT / "index.html"
     if index_file.exists():
         return FileResponse(index_file)
@@ -456,29 +538,34 @@ async def serve_index():
 
 @app.get("/index.html")
 async def serve_index_direct():
+    """Direct URL alias serving the SPA index.html."""
     return FileResponse(PROJECT_ROOT / "index.html")
 
 
 @app.get("/style.css")
 async def serve_css():
+    """Serves the responsive CSS design stylesheet with text/css MIME type."""
     css_file = PROJECT_ROOT / "style.css"
     return FileResponse(css_file, media_type="text/css")
 
 
 @app.get("/script.js")
 async def serve_js():
+    """Serves the frontend canvas workstation JavaScript engine."""
     js_file = PROJECT_ROOT / "script.js"
     return FileResponse(js_file, media_type="application/javascript")
 
 
 @app.get("/auth.js")
 async def serve_auth_js():
+    """Serves the client authentication controller (Supabase JS / local demo)."""
     auth_file = PROJECT_ROOT / "auth.js"
     return FileResponse(auth_file, media_type="application/javascript")
 
 
 @app.get("/{filename}.jpg")
 async def serve_jpg(filename: str):
+    """Serves sample showcase JPEG photography assets for zero-asset testing."""
     img_file = PROJECT_ROOT / f"{filename}.jpg"
     if img_file.exists() and img_file.is_file():
         return FileResponse(img_file, media_type="image/jpeg")
@@ -487,6 +574,7 @@ async def serve_jpg(filename: str):
 
 @app.get("/assets/{filename}")
 async def serve_frontend_asset(filename: str):
+    """Fallback asset endpoint serving static UI dependencies."""
     asset_file = PROJECT_ROOT / filename
     if asset_file.exists() and asset_file.is_file():
         return FileResponse(asset_file)

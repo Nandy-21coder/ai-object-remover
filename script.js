@@ -618,6 +618,18 @@
   /* ==========================================================================
      5. CANVAS DRAWING & COORDINATES
      ========================================================================== */
+  /**
+   * Converts browser viewport mouse/pointer coordinates (clientX, clientY)
+   * into exact pixel coordinates relative to the underlying full-resolution image canvas.
+   *
+   * Accounts for:
+   * 1. Viewport pan offset (getBoundingClientRect left/top).
+   * 2. Viewport zoom scaling (ratio between canvas pixel width and CSS display width).
+   *
+   * @param {number} clientX - PointerEvent.clientX
+   * @param {number} clientY - PointerEvent.clientY
+   * @returns {{x: number, y: number}} Unprojected pixel coordinates in image space.
+   */
   function getCanvasCoords(clientX, clientY) {
     if (!els.maskCanvas) return { x: 0, y: 0 };
     const rect = els.maskCanvas.getBoundingClientRect();
@@ -1112,6 +1124,17 @@
   /* ==========================================================================
      8. AI OBJECT REMOVAL (REAL BACKEND INTEGRATION & NO VIEWPORT JUMP)
      ========================================================================== */
+  /**
+   * Orchestrates the primary AI object removal workflow:
+   * 1. Validates presence of source photo and active mask strokes.
+   * 2. Captures high-precision client timestamp via performance.now().
+   * 3. Serializes canvas image and strict binary mask into PNG blobs.
+   * 4. Dispatches multipart/form-data POST to FastAPI /api/remove-object.
+   * 5. Handles HTTP error boundaries, extracting sanitized server error details.
+   * 6. Reads performance headers (X-Process-Time-Ms) and decodes reconstructed PNG.
+   * 7. Smoothly fades drawn mask and initializes interactive comparison split-slider.
+   * 8. Records telemetry and presents success notification without changing scroll position.
+   */
   async function executeObjectRemoval() {
     if (state.isProcessing) return;
 
@@ -1287,6 +1310,14 @@
     if (els.processingStatusCard) els.processingStatusCard.style.display = 'none';
   }
 
+  /**
+   * Generates a strict 8-bit black-and-white binary PNG mask blob from the interactive mask canvas.
+   * Quantizes semi-transparent stroke pixels:
+   * - Alpha > 25 -> 255 (Pure White: object to be removed and synthesized by AI).
+   * - Alpha <= 25 -> 0 (Pure Black: untouched background to be preserved).
+   *
+   * @returns {Promise<Blob>} A Promise resolving to the binary PNG mask Blob.
+   */
   function generateStrictBinaryMaskBlob() {
     return new Promise((resolve) => {
       const w = state.imageWidth;
